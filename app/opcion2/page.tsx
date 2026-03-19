@@ -628,7 +628,7 @@ export default function App() {
 
             <section className="rounded-3xl bg-[#0F172A] p-4 text-white shadow-sm">
               <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">Power Platform</p>
-              <h3 className="mt-2 text-lg font-semibold">Arquitectura visible para el cliente</h3>
+              <h3 className="mt-2 text-lg font-semibold">Arquitectura opcional</h3>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl bg-white/5 p-3">
                   <div className="flex items-center gap-2 text-sm font-medium">
@@ -967,7 +967,7 @@ export default function App() {
             </section>
 
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <SectionHeader title="Resumen clínico" subtitle="Contenido simple para el cliente" />
+              <SectionHeader title="Resumen clínico" subtitle="Contenido simple" />
               <div className="space-y-4 text-sm">
                 <div>
                   <p className="font-medium text-slate-500">Observación</p>
@@ -1048,7 +1048,7 @@ export default function App() {
 
             <section className="rounded-3xl bg-[#0F172A] p-4 text-white shadow-sm">
               <p className="text-[11px] uppercase tracking-[0.18em] text-white/55">Mockup comercial</p>
-              <h3 className="mt-2 text-lg font-semibold">Cómo venderlo al cliente</h3>
+              <h3 className="mt-2 text-lg font-semibold">Beneficios</h3>
               <div className="mt-4 space-y-3 text-sm text-white/85">
                 <div className="flex items-center gap-3">
                   <ArrowUpRight className="h-4 w-4" />
