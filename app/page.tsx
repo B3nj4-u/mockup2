@@ -1207,9 +1207,9 @@ export default function App() {
               <h2 className="mt-2 text-2xl font-semibold leading-tight">
                 Centro → módulo → jaula → historial → registro → reporte
               </h2>
-              <p className="mt-3 text-sm text-white/85">
+              {/* <p className="mt-3 text-sm text-white/85">
                 Mockup alineado al trabajo real del veterinario y a la futura implementación en Power Apps.
-              </p>
+              </p> */}
 
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
@@ -1233,7 +1233,7 @@ export default function App() {
 
             <SearchBox value={search} onChange={setSearch} onClear={() => setSearch("")} />
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+            {/* <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
               <SectionHeader title="Flujo principal" subtitle="Solo lo necesario para terreno" />
               <div className="grid grid-cols-2 gap-3">
                 {[
@@ -1252,7 +1252,7 @@ export default function App() {
                   </div>
                 ))}
               </div>
-            </section>
+            </section> */}
 
             <section className="grid grid-cols-2 gap-3">
               <MetricCard label="Completadas" value={stats.completadas} icon={CheckCircle2} tone="emerald" />
@@ -1376,9 +1376,9 @@ export default function App() {
             </section>
 
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <SectionHeader title="Contexto clínico" subtitle="Lo primero que ve el veterinario" />
-              <div className="grid grid-cols-3 gap-2">
-                {(["centro", "modulo", "jaula"] as HistoryLevel[]).map((level) => (
+              <SectionHeader title="Contexto clínico" subtitle="Resumen" />
+              <div className="grid grid-cols-2 gap-2">
+                {(["modulo", "jaula"] as HistoryLevel[]).map((level) => (
                   <button
                     key={level}
                     onClick={() => setHistoryLevel(level)}
@@ -1395,36 +1395,6 @@ export default function App() {
               </div>
 
               <div className="mt-3 space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-slate-700">Centro</label>
-                  <select
-                    value={selectedCentro}
-                    onChange={(e) => {
-                      const centro = e.target.value;
-                      const firstModulo =
-                        Array.from(new Set(visits.filter((v) => v.centro === centro).map((v) => v.modulo)))[0] || "";
-                      const firstJaula =
-                        Array.from(
-                          new Set(
-                            visits
-                              .filter((v) => v.centro === centro && v.modulo === firstModulo)
-                              .map((v) => v.jaula)
-                          )
-                        )[0] || "";
-                      setSelectedCentro(centro);
-                      setSelectedModulo(firstModulo);
-                      setSelectedJaula(firstJaula);
-                    }}
-                    className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
-                  >
-                    {centros.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-sm font-medium text-slate-700">Módulo</label>
@@ -1433,19 +1403,13 @@ export default function App() {
                       onChange={(e) => {
                         const modulo = e.target.value;
                         const firstJaula =
-                          Array.from(
-                            new Set(
-                              visits
-                                .filter((v) => v.centro === selectedCentro && v.modulo === modulo)
-                                .map((v) => v.jaula)
-                            )
-                          )[0] || "";
+                          Array.from(new Set(visits.filter((v) => v.modulo === modulo).map((v) => v.jaula)))[0] || "";
                         setSelectedModulo(modulo);
                         setSelectedJaula(firstJaula);
                       }}
                       className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
                     >
-                      {modulosForCentro.map((item) => (
+                      {Array.from(new Set(visits.map((v) => v.modulo))).map((item) => (
                         <option key={item} value={item}>
                           {item}
                         </option>
@@ -1460,7 +1424,9 @@ export default function App() {
                       onChange={(e) => setSelectedJaula(e.target.value)}
                       className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
                     >
-                      {jaulasForModulo.map((item) => (
+                      {Array.from(
+                        new Set(visits.filter((v) => v.modulo === selectedModulo).map((v) => v.jaula))
+                      ).map((item) => (
                         <option key={item} value={item}>
                           {item}
                         </option>
