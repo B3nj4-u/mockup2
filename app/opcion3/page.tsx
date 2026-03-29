@@ -38,6 +38,8 @@ import {
   Wifi,
   WifiOff,
   FileOutput,
+  Thermometer,
+  Atom
 } from "lucide-react";
 
 type VisitStatus = "Pendiente" | "En progreso" | "Completada";
@@ -70,6 +72,8 @@ type Visit = {
   prioridad: Priority;
   modulo: string;
   jaula: string;
+  numeroPeces: number;
+  pesoPromedio: number;
   biomasa: number;
   mortalidad: number;
   temperatura: number;
@@ -88,6 +92,8 @@ type VisitForm = {
   prioridad: Priority;
   modulo: string;
   jaula: string;
+  numeroPeces: string;
+  pesoPromedio: string;
   biomasa: string;
   mortalidad: string;
   temperatura: string;
@@ -150,6 +156,8 @@ const visitsSeed: Visit[] = [
     prioridad: "Alta",
     modulo: "QS01",
     jaula: "QS01-101",
+    numeroPeces: 364266,
+    pesoPromedio: 6.0,
     biomasa: 2185595,
     mortalidad: 2.2,
     temperatura: 11.4,
@@ -169,6 +177,8 @@ const visitsSeed: Visit[] = [
     prioridad: "Media",
     modulo: "Módulo 1",
     jaula: "104",
+    numeroPeces: 248000,
+    pesoPromedio: 5.0,
     biomasa: 1240000,
     mortalidad: 1.8,
     temperatura: 12.1,
@@ -188,6 +198,8 @@ const visitsSeed: Visit[] = [
     prioridad: "Alta",
     modulo: "Módulo 2",
     jaula: "203",
+    numeroPeces: 175000,
+    pesoPromedio: 5.6,
     biomasa: 980000,
     mortalidad: 1.2,
     temperatura: 9.6,
@@ -391,6 +403,8 @@ const defaultForm: VisitForm = {
   prioridad: "Media",
   modulo: "",
   jaula: "",
+  numeroPeces: "",
+  pesoPromedio: "",
   biomasa: "",
   mortalidad: "",
   temperatura: "",
@@ -427,6 +441,31 @@ function restoreChecklist(input: unknown): ChecklistItem[] {
       icon: checklistIconMap[row.label ?? ""] ?? Eye,
     };
   });
+}
+
+
+function normalizeVisit(raw: Partial<Visit> | null | undefined): Visit {
+  return {
+    id: raw?.id ?? `VST-${Date.now().toString().slice(-6)}`,
+    centro: raw?.centro ?? "",
+    empresa: raw?.empresa ?? "",
+    fecha: raw?.fecha ?? "",
+    hora: raw?.hora ?? "",
+    veterinario: raw?.veterinario ?? "",
+    region: raw?.region ?? "",
+    estado: raw?.estado ?? "Pendiente",
+    prioridad: raw?.prioridad ?? "Media",
+    modulo: raw?.modulo ?? "",
+    jaula: raw?.jaula ?? "",
+    numeroPeces: Number(raw?.numeroPeces ?? 0),
+    pesoPromedio: Number(raw?.pesoPromedio ?? 0),
+    biomasa: Number(raw?.biomasa ?? 0),
+    mortalidad: Number(raw?.mortalidad ?? 0),
+    temperatura: Number(raw?.temperatura ?? 0),
+    oxigeno: Number(raw?.oxigeno ?? 0),
+    hallazgo: raw?.hallazgo ?? "Sin hallazgo registrado",
+    estadoSanitario: raw?.estadoSanitario ?? "Sin tratamiento",
+  };
 }
 
 const medicalHistorySeed: MedicalEvent[] = [
@@ -926,6 +965,8 @@ function toForm(visit: Visit): VisitForm {
     prioridad: visit.prioridad,
     modulo: visit.modulo,
     jaula: visit.jaula,
+    numeroPeces: String(visit.numeroPeces),
+    pesoPromedio: String(visit.pesoPromedio),
     biomasa: String(visit.biomasa),
     mortalidad: String(visit.mortalidad),
     temperatura: String(visit.temperatura),
@@ -948,6 +989,8 @@ function createVisitFromForm(form: VisitForm, existingId?: string, currentState?
     prioridad: form.prioridad,
     modulo: form.modulo.trim(),
     jaula: form.jaula.trim(),
+    numeroPeces: Number(form.numeroPeces || 0),
+    pesoPromedio: Number(form.pesoPromedio || 0),
     biomasa: Number(form.biomasa || 0),
     mortalidad: Number(form.mortalidad || 0),
     temperatura: Number(form.temperatura || 0),
@@ -1033,7 +1076,7 @@ export default function App() {
       const savedHistoryFilters = localStorage.getItem(STORAGE_KEYS.historyFilters);
       const savedSamplingFlow = localStorage.getItem(STORAGE_KEYS.samplingFlow);
 
-      const parsedVisits: Visit[] = savedVisits ? JSON.parse(savedVisits) : visitsSeed;
+      const parsedVisits: Visit[] = savedVisits ? JSON.parse(savedVisits).map((visit: Partial<Visit>) => normalizeVisit(visit)) : visitsSeed;
       setVisits(parsedVisits);
 
       const selected =
@@ -1267,6 +1310,8 @@ export default function App() {
       fecha: selectedVisit.fecha,
       hora: selectedVisit.hora,
       estadoSanitario: selectedVisit.estadoSanitario,
+      numeroPeces: selectedVisit.numeroPeces,
+      pesoPromedio: selectedVisit.pesoPromedio,
       biomasa: selectedVisit.biomasa,
       mortalidad: selectedVisit.mortalidad,
       temperatura: selectedVisit.temperatura,
@@ -1619,6 +1664,59 @@ export default function App() {
                 ))}
               </div>
             </section>
+            <AccordionSection
+              title="Antecedentes productivos"
+              subtitle="N° peces, peso promedio, biomasa y mortalidad"
+              defaultOpen
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <MetricCard
+                  label="N° peces"
+                  value={(selectedVisit?.numeroPeces ?? 0).toLocaleString("es-CL")}
+                  icon={Layers3}
+                  tone="blue"
+                />
+                <MetricCard
+                  label="Peso promedio"
+                  value={`${selectedVisit?.pesoPromedio ?? 0} kg`}
+                  icon={Grid3X3}
+                  tone="blue"
+                />
+                <MetricCard
+                  label="Biomasa"
+                  value={(selectedVisit?.biomasa ?? 0).toLocaleString("es-CL")}
+                  icon={Activity}
+                  tone="emerald"
+                />
+                <MetricCard
+                  label="Mortalidad"
+                  value={`${selectedVisit?.mortalidad ?? 0}%`}
+                  icon={AlertTriangle}
+                  tone="amber"
+                />
+              </div>
+            </AccordionSection>
+
+            <AccordionSection
+              title="Antecedentes ambientales"
+              subtitle="Temperatura y oxígeno del entorno"
+              defaultOpen
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <MetricCard
+                  label="Temperatura"
+                  value={`${selectedVisit?.temperatura ?? 0} °C`}
+                  icon={Thermometer}
+                  tone="blue"
+                />
+                <MetricCard
+                  label="Oxígeno"
+                  value={`${selectedVisit?.oxigeno ?? 0} mg/L`}
+                  icon={Atom}
+                  tone="emerald"
+                />
+              </div>
+            </AccordionSection>
           </div>
         )}
 
@@ -1794,15 +1892,17 @@ export default function App() {
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3">
-                <MetricCard label="Eventos previos" value={filteredMedicalHistory.length} icon={History} tone="blue" />
-                <MetricCard label="Causa principal" value={dominantCause} icon={AlertTriangle} tone="amber" />
-                <MetricCard label="Estado jaula" value={selectedVisit.estadoSanitario} icon={ClipboardCheck} tone="emerald" />
+              <MetricCard label="Estado jaula" value={selectedVisit.estadoSanitario} icon={ClipboardCheck} tone="emerald" />
                 <MetricCard
                   label="Mortalidad total"
                   value={mortalityForContext.reduce((acc, item) => acc + item.total, 0)}
                   icon={Activity}
                   tone="slate"
                 />
+                <MetricCard label="Eventos previos" value={filteredMedicalHistory.length} icon={History} tone="blue" />
+                
+                <MetricCard label="Causa principal" value={dominantCause} icon={AlertTriangle} tone="amber" />
+                
               </div>
             </section>
 
@@ -1819,7 +1919,7 @@ export default function App() {
               </div> */}
 
               <div className="mt-4 space-y-3">
-                <AccordionSection title="Tipo de visita"  defaultOpen>
+                <AccordionSection title="Tipo de visita" defaultOpen>
                   <div className="grid grid-cols-2 gap-3">
                     {visitTypeOptions.map((item) => (
                       <ActionChip
@@ -1909,12 +2009,40 @@ export default function App() {
               </div>
             </AccordionSection>
 
-            <section className="grid grid-cols-2 gap-3">
-              <MetricCard label="Biomasa" value={selectedVisit.biomasa} icon={Activity} tone="blue" />
-              <MetricCard label="Mortalidad %" value={`${selectedVisit.mortalidad}%`} icon={AlertTriangle} tone="amber" />
-              <MetricCard label="Temperatura" value={`${selectedVisit.temperatura} °C`} icon={Activity} tone="slate" />
-              <MetricCard label="Oxígeno" value={`${selectedVisit.oxigeno} mg/L`} icon={Activity} tone="emerald" />
-            </section>
+            <AccordionSection
+              title="Antecedentes productivos"
+              subtitle="Información productiva del módulo/jaula"
+              defaultOpen
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <MetricCard
+                  label="N° peces"
+                  value={(selectedVisit?.numeroPeces ?? 0).toLocaleString("es-CL")}
+                  icon={Layers3}
+                  tone="blue"
+                />
+
+                <MetricCard
+                  label="Peso promedio"
+                  value={`${selectedVisit?.pesoPromedio ?? 0} kg`}
+                  icon={Grid3X3}
+                  tone="blue"
+                />
+                <MetricCard label="Biomasa" value={selectedVisit.biomasa} icon={Activity} />
+                <MetricCard label="Mortalidad" value={selectedVisit.mortalidad} icon={AlertTriangle} />
+              </div>
+            </AccordionSection>
+
+            <AccordionSection
+              title="Antecedentes ambientales"
+              subtitle="Condiciones del agua"
+              defaultOpen
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <MetricCard label="Temperatura" value={selectedVisit.temperatura} icon={Thermometer} />
+                <MetricCard label="Oxígeno" value={selectedVisit.oxigeno} icon={Atom} />
+              </div>
+            </AccordionSection>
 
             <AccordionSection title="Inspección visual" subtitle="Registro breve de comportamiento y observación" defaultOpen>
               <div className="flex justify-end">
@@ -2126,7 +2254,7 @@ export default function App() {
               </div> */}
 
               <div className="mt-4 space-y-3">
-                <AccordionSection title="Categoría de muestreo"  defaultOpen>
+                <AccordionSection title="Categoría de muestreo" defaultOpen>
                   <div className="grid grid-cols-2 gap-3">
                     {samplingCategoryOptions.map((item) => (
                       <ActionChip
