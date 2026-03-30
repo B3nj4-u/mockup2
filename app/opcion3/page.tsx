@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -15,16 +16,12 @@ import {
   Send,
   Download,
   ClipboardCheck,
-  BadgeCheck,
   X,
   Trash2,
   Pencil,
-  Save,
   RotateCcw,
   Eye,
-  History,
   Printer,
-  Building2,
   Layers3,
   Grid3X3,
   Mic,
@@ -37,14 +34,16 @@ import {
   AlertTriangle,
   Wifi,
   WifiOff,
-  FileOutput,
   Thermometer,
-  Atom
+  Atom,
+  Skull,
+  PackageOpen,
+  ClipboardList,
 } from "lucide-react";
 
 type VisitStatus = "Pendiente" | "En progreso" | "Completada";
 type Priority = "Alta" | "Media" | "Baja";
-type TabKey = "inicio" | "visitas" | "registro" | "muestreo" | "resumen";
+type TabKey = "inicio" | "visitas" | "registro" | "muestreo" | "necropsias" | "resumen";
 type FilterKey = "Todas" | "Hoy" | "Pendientes" | "En progreso" | "Completadas";
 type HistoryLevel = "centro" | "modulo" | "jaula";
 type SanitaryStatus = "En tratamiento" | "En carencia" | "Sin tratamiento";
@@ -135,12 +134,37 @@ type ChecklistItem = {
   icon: React.ElementType;
 };
 
+type NecropsyRecord = {
+  id: string;
+  fecha: string;
+  centro: string;
+  modulo: string;
+  jaula: string;
+  veterinario: string;
+  estadoSanitario: SanitaryStatus;
+  mortalidadDia: number;
+  mortalidadMesPct: number;
+  mortalidadAcumuladaPct: number;
+  nroTratamientos: number;
+  nroBanos: number;
+  seleccionado: number;
+  origen: "Ponton de ensilaje";
+  motivo: "Rutina" | "Sospecha" | "Brote" | "Seguimiento tratamiento";
+  hallazgoExterno: string;
+  hallazgoInterno: string;
+  diagnosticoPresuntivo: string;
+  clasificacionPrimaria: string[];
+  clasificacionSecundaria: MortalityCause[];
+  observaciones: string;
+};
+
 const STORAGE_KEYS = {
-  visits: "mockup-visits-v3",
-  selectedVisitId: "mockup-selected-visit-id-v3",
-  clinicalState: "mockup-clinical-state-v3",
-  historyFilters: "mockup-history-filters-v3",
-  samplingFlow: "mockup-sampling-flow-v3",
+  visits: "mockup-visits-v4",
+  selectedVisitId: "mockup-selected-visit-id-v4",
+  clinicalState: "mockup-clinical-state-v4",
+  historyFilters: "mockup-history-filters-v4",
+  samplingFlow: "mockup-sampling-flow-v4",
+  necropsyState: "mockup-necropsy-state-v4",
 };
 
 const visitsSeed: Visit[] = [
@@ -233,7 +257,6 @@ const actionOptions = [
   "Revisar en 48 h",
 ];
 
-
 const visitTypeOptions = [
   "Programa Sanitario Específico",
   "Monitoreo de Rutina o Preventiva",
@@ -287,14 +310,7 @@ const visitActivityOptions = [
   "Revisión de cargas parasitarias (Caligus)",
 ];
 
-const visitSpecificProgramOptions = [
-  "Programa SRS",
-  "Programa ISA",
-  "BKD",
-  "IPN",
-  "PD",
-  "Otro",
-];
+const visitSpecificProgramOptions = ["Programa SRS", "Programa ISA", "BKD", "IPN", "PD", "Otro"];
 
 const samplingCategoryOptions = [
   "Por Programa Sanitario",
@@ -425,6 +441,63 @@ const checklistIconMap: Record<string, React.ElementType> = Object.fromEntries(
   defaultChecklist.map((item) => [item.label, item.icon])
 );
 
+const mortalityPrimaryOptions = ["SCA", "DaF", "DEF", "Rez", "TC", "Otras"];
+const necropsyMotiveOptions: NecropsyRecord["motivo"][] = [
+  "Rutina",
+  "Sospecha",
+  "Brote",
+  "Seguimiento tratamiento",
+];
+
+const necropsySeed: NecropsyRecord[] = [
+  {
+    id: "NEC-24001",
+    fecha: "2026-03-20",
+    centro: "Quilque Sur",
+    modulo: "QS01",
+    jaula: "QS01-101",
+    veterinario: "Pedro Ulloa",
+    estadoSanitario: "Sin tratamiento",
+    mortalidadDia: 248,
+    mortalidadMesPct: 2.2,
+    mortalidadAcumuladaPct: 11.6,
+    nroTratamientos: 5,
+    nroBanos: 3,
+    seleccionado: 6,
+    origen: "Ponton de ensilaje",
+    motivo: "Sospecha",
+    hallazgoExterno: "Peces letárgicos, leve palidez branquial.",
+    hallazgoInterno: "Bazo agrandado y compromiso branquial compatible con proceso infeccioso.",
+    diagnosticoPresuntivo: "SRS / PGD",
+    clasificacionPrimaria: ["Otras"],
+    clasificacionSecundaria: ["SRS", "PGD"],
+    observaciones: "Tabilla prellenada para impresión y firma en pontón.",
+  },
+  {
+    id: "NEC-24002",
+    fecha: "2026-03-20",
+    centro: "Capera",
+    modulo: "Módulo 1",
+    jaula: "104",
+    veterinario: "Catalina Ruiz",
+    estadoSanitario: "En tratamiento",
+    mortalidadDia: 6,
+    mortalidadMesPct: 1.8,
+    mortalidadAcumuladaPct: 7.4,
+    nroTratamientos: 2,
+    nroBanos: 1,
+    seleccionado: 4,
+    origen: "Ponton de ensilaje",
+    motivo: "Seguimiento tratamiento",
+    hallazgoExterno: "Condición corporal disminuida en muestra de mortalidad.",
+    hallazgoInterno: "Predominio de lesiones branquiales con focos hemorrágicos.",
+    diagnosticoPresuntivo: "PGD",
+    clasificacionPrimaria: ["Rez"],
+    clasificacionSecundaria: ["PGD", "HSMI"],
+    observaciones: "Caso alineado a seguimiento clínico del módulo.",
+  },
+];
+
 type StoredChecklistItem = {
   label: string;
   done: boolean;
@@ -442,7 +515,6 @@ function restoreChecklist(input: unknown): ChecklistItem[] {
     };
   });
 }
-
 
 function normalizeVisit(raw: Partial<Visit> | null | undefined): Visit {
   return {
@@ -736,7 +808,6 @@ function SearchBox({
   );
 }
 
-
 function AccordionSection({
   title,
   subtitle,
@@ -749,10 +820,7 @@ function AccordionSection({
   defaultOpen?: boolean;
 }) {
   return (
-    <details
-      open={defaultOpen}
-      className="group rounded-3xl border border-slate-200 bg-white shadow-sm"
-    >
+    <details open={defaultOpen} className="group rounded-3xl border border-slate-200 bg-white shadow-sm">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
         <div>
           <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
@@ -775,12 +843,13 @@ function BottomNav({
   const items: Array<{ key: TabKey; label: string; icon: React.ElementType }> = [
     { key: "inicio", label: "Inicio", icon: Home },
     { key: "visitas", label: "Visitas", icon: CalendarDays },
+    { key: "necropsias", label: "Necropsias", icon: Skull },
     { key: "resumen", label: "Resumen", icon: FileText },
   ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto grid max-w-md grid-cols-3 px-2 py-2">
+      <div className="mx-auto grid max-w-md grid-cols-4 px-2 py-2">
         {items.map((item) => {
           const active = tab === item.key;
           const Icon = item.icon;
@@ -1053,13 +1122,25 @@ export default function App() {
   const [selectedVisitTypes, setSelectedVisitTypes] = useState<string[]>(["Monitoreo de Rutina o Preventiva"]);
   const [selectedVisitObjectives, setSelectedVisitObjectives] = useState<string[]>(["Control preventivo"]);
   const [selectedVisitFrequencies, setSelectedVisitFrequencies] = useState<string[]>(["Mensual"]);
-  const [selectedVisitActivities, setSelectedVisitActivities] = useState<string[]>(["Chequeo clínico", "Revisión de tratamientos"]);
+  const [selectedVisitActivities, setSelectedVisitActivities] = useState<string[]>([
+    "Chequeo clínico",
+    "Revisión de tratamientos",
+  ]);
   const [selectedVisitPrograms, setSelectedVisitPrograms] = useState<string[]>(["Programa SRS"]);
-  const [selectedSamplingCategories, setSelectedSamplingCategories] = useState<string[]>(["Por Programa Sanitario"]);
+  const [selectedSamplingCategories, setSelectedSamplingCategories] = useState<string[]>([
+    "Por Programa Sanitario",
+  ]);
   const [selectedSamplingObjectives, setSelectedSamplingObjectives] = useState<string[]>(["Vigilancia activa"]);
   const [selectedSamplingDiseases, setSelectedSamplingDiseases] = useState<string[]>(["SRS"]);
-  const [selectedSamplingTypes, setSelectedSamplingTypes] = useState<string[]>(["Riñón", "Bazo", "Muestra sanguínea"]);
-  const [selectedSamplingEnvironment, setSelectedSamplingEnvironment] = useState<string[]>(["Temperatura", "Oxígeno"]);
+  const [selectedSamplingTypes, setSelectedSamplingTypes] = useState<string[]>([
+    "Riñón",
+    "Bazo",
+    "Muestra sanguínea",
+  ]);
+  const [selectedSamplingEnvironment, setSelectedSamplingEnvironment] = useState<string[]>([
+    "Temperatura",
+    "Oxígeno",
+  ]);
   const [samplingContextMode, setSamplingContextMode] = useState<"independiente" | "visita">("independiente");
   const [samplingLinkedVisitId, setSamplingLinkedVisitId] = useState<string | null>(null);
 
@@ -1068,6 +1149,19 @@ export default function App() {
   const [selectedModulo, setSelectedModulo] = useState(visitsSeed[0].modulo);
   const [selectedJaula, setSelectedJaula] = useState(visitsSeed[0].jaula);
 
+  const [necropsyRecords, setNecropsyRecords] = useState<NecropsyRecord[]>(necropsySeed);
+  const [selectedNecropsyId, setSelectedNecropsyId] = useState<string>(necropsySeed[0].id);
+  const [necropsySelectedCount, setNecropsySelectedCount] = useState("6");
+  const [necropsyMotive, setNecropsyMotive] = useState<NecropsyRecord["motivo"]>("Sospecha");
+  const [necropsyExternalNote, setNecropsyExternalNote] = useState("Peces con condición disminuida y palidez branquial.");
+  const [necropsyInternalNote, setNecropsyInternalNote] = useState("Hallazgos macroscópicos compatibles con proceso sistémico.");
+  const [necropsyPresumptiveDx, setNecropsyPresumptiveDx] = useState("SRS / PGD");
+  const [necropsyObservations, setNecropsyObservations] = useState(
+    "Registro preparado para impresión en pontón y respaldo en bitácora."
+  );
+  const [selectedNecropsyPrimary, setSelectedNecropsyPrimary] = useState<string[]>(["Otras"]);
+  const [selectedNecropsySecondary, setSelectedNecropsySecondary] = useState<MortalityCause[]>(["SRS", "PGD"]);
+
   useEffect(() => {
     try {
       const savedVisits = localStorage.getItem(STORAGE_KEYS.visits);
@@ -1075,12 +1169,14 @@ export default function App() {
       const savedClinicalState = localStorage.getItem(STORAGE_KEYS.clinicalState);
       const savedHistoryFilters = localStorage.getItem(STORAGE_KEYS.historyFilters);
       const savedSamplingFlow = localStorage.getItem(STORAGE_KEYS.samplingFlow);
+      const savedNecropsyState = localStorage.getItem(STORAGE_KEYS.necropsyState);
 
-      const parsedVisits: Visit[] = savedVisits ? JSON.parse(savedVisits).map((visit: Partial<Visit>) => normalizeVisit(visit)) : visitsSeed;
+      const parsedVisits: Visit[] = savedVisits
+        ? JSON.parse(savedVisits).map((visit: Partial<Visit>) => normalizeVisit(visit))
+        : visitsSeed;
       setVisits(parsedVisits);
 
-      const selected =
-        parsedVisits.find((v) => v.id === savedSelectedVisitId) || parsedVisits[0] || visitsSeed[0];
+      const selected = parsedVisits.find((v) => v.id === savedSelectedVisitId) || parsedVisits[0] || visitsSeed[0];
       setSelectedVisit(selected);
       setSelectedCentro(selected.centro);
       setSelectedModulo(selected.modulo);
@@ -1121,9 +1217,24 @@ export default function App() {
         setSamplingContextMode(parsed.samplingContextMode ?? "independiente");
         setSamplingLinkedVisitId(parsed.samplingLinkedVisitId ?? null);
       }
+
+      if (savedNecropsyState) {
+        const parsed = JSON.parse(savedNecropsyState);
+        setNecropsyRecords(parsed.necropsyRecords ?? necropsySeed);
+        setSelectedNecropsyId(parsed.selectedNecropsyId ?? necropsySeed[0].id);
+        setNecropsySelectedCount(parsed.necropsySelectedCount ?? "6");
+        setNecropsyMotive(parsed.necropsyMotive ?? "Sospecha");
+        setNecropsyExternalNote(parsed.necropsyExternalNote ?? "");
+        setNecropsyInternalNote(parsed.necropsyInternalNote ?? "");
+        setNecropsyPresumptiveDx(parsed.necropsyPresumptiveDx ?? "");
+        setNecropsyObservations(parsed.necropsyObservations ?? "");
+        setSelectedNecropsyPrimary(parsed.selectedNecropsyPrimary ?? ["Otras"]);
+        setSelectedNecropsySecondary(parsed.selectedNecropsySecondary ?? ["SRS", "PGD"]);
+      }
     } catch {
       setVisits(visitsSeed);
       setSelectedVisit(visitsSeed[0]);
+      setNecropsyRecords(necropsySeed);
     } finally {
       setReady(true);
     }
@@ -1211,6 +1322,37 @@ export default function App() {
   }, [samplingContextMode, samplingLinkedVisitId, ready]);
 
   useEffect(() => {
+    if (!ready) return;
+    localStorage.setItem(
+      STORAGE_KEYS.necropsyState,
+      JSON.stringify({
+        necropsyRecords,
+        selectedNecropsyId,
+        necropsySelectedCount,
+        necropsyMotive,
+        necropsyExternalNote,
+        necropsyInternalNote,
+        necropsyPresumptiveDx,
+        necropsyObservations,
+        selectedNecropsyPrimary,
+        selectedNecropsySecondary,
+      })
+    );
+  }, [
+    necropsyRecords,
+    selectedNecropsyId,
+    necropsySelectedCount,
+    necropsyMotive,
+    necropsyExternalNote,
+    necropsyInternalNote,
+    necropsyPresumptiveDx,
+    necropsyObservations,
+    selectedNecropsyPrimary,
+    selectedNecropsySecondary,
+    ready,
+  ]);
+
+  useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(""), 2600);
     return () => window.clearTimeout(timer);
@@ -1244,20 +1386,6 @@ export default function App() {
   }, [visits]);
 
   const centros = useMemo(() => Array.from(new Set(visits.map((v) => v.centro))), [visits]);
-
-  const modulosForCentro = useMemo(() => {
-    return Array.from(new Set(visits.filter((v) => v.centro === selectedCentro).map((v) => v.modulo)));
-  }, [visits, selectedCentro]);
-
-  const jaulasForModulo = useMemo(() => {
-    return Array.from(
-      new Set(
-        visits
-          .filter((v) => v.centro === selectedCentro && v.modulo === selectedModulo)
-          .map((v) => v.jaula)
-      )
-    );
-  }, [visits, selectedCentro, selectedModulo]);
 
   const filteredMedicalHistory = useMemo(() => {
     return medicalHistorySeed.filter((item) => {
@@ -1300,6 +1428,22 @@ export default function App() {
     canal: "Impresión",
   };
 
+  const selectedNecropsy = useMemo(
+    () => necropsyRecords.find((record) => record.id === selectedNecropsyId) || necropsyRecords[0] || necropsySeed[0],
+    [necropsyRecords, selectedNecropsyId]
+  );
+
+  const necropsyForContext = useMemo(() => {
+    return necropsyRecords.filter((item) => {
+      const matchText = [item.id, item.centro, item.modulo, item.jaula, item.diagnosticoPresuntivo]
+        .join(" ")
+        .toLowerCase();
+      if (search.trim() && !matchText.includes(search.toLowerCase().trim())) return false;
+      if (selectedCentro && item.centro !== selectedCentro && tab === "necropsias") return false;
+      return true;
+    });
+  }, [necropsyRecords, search, selectedCentro, tab]);
+
   const generatedReport = useMemo(() => {
     return {
       centro: selectedVisit.centro,
@@ -1339,6 +1483,17 @@ export default function App() {
       acciones: selectedActions.join(", ") || "Sin selección",
       principalCausa: dominantCause,
       destinatario: recipient,
+      necropsiaIntegrada: {
+        id: selectedNecropsy.id,
+        origen: selectedNecropsy.origen,
+        motivo: necropsyMotive,
+        seleccionados: necropsySelectedCount,
+        hallazgoExterno: necropsyExternalNote,
+        hallazgoInterno: necropsyInternalNote,
+        diagnosticoPresuntivo: necropsyPresumptiveDx,
+        clasificacionPrimaria: selectedNecropsyPrimary.join(", "),
+        clasificacionSecundaria: selectedNecropsySecondary.join(", "),
+      },
     };
   }, [
     selectedVisit,
@@ -1365,13 +1520,22 @@ export default function App() {
     recipient,
     samplingContextMode,
     linkedSamplingVisit,
+    selectedNecropsy,
+    necropsyMotive,
+    necropsySelectedCount,
+    necropsyExternalNote,
+    necropsyInternalNote,
+    necropsyPresumptiveDx,
+    selectedNecropsyPrimary,
+    selectedNecropsySecondary,
   ]);
 
-  const toggleInArray = (
-    value: string,
-    setter: React.Dispatch<React.SetStateAction<string[]>>
-  ) => {
+  const toggleInArray = (value: string, setter: React.Dispatch<React.SetStateAction<string[]>>) => {
     setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+  };
+
+  const toggleNecropsySecondary = (value: MortalityCause) => {
+    setSelectedNecropsySecondary((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
   };
 
   const openSamplingFromVisit = () => {
@@ -1386,6 +1550,33 @@ export default function App() {
     setSamplingLinkedVisitId(null);
     setTab("muestreo");
     setToast("Módulo de muestreo abierto desde menú principal");
+  };
+
+  const openNecropsyFromVisit = () => {
+    const linked = necropsyRecords.find(
+      (item) =>
+        item.centro === selectedVisit.centro && item.modulo === selectedVisit.modulo && item.jaula === selectedVisit.jaula
+    );
+    if (linked) {
+      setSelectedNecropsyId(linked.id);
+      hydrateNecropsyEditor(linked);
+    }
+    setTab("necropsias");
+    setToast(`Necropsia abierta para ${selectedVisit.modulo} · ${selectedVisit.jaula}`);
+  };
+
+  const hydrateNecropsyEditor = (record: NecropsyRecord) => {
+    setNecropsySelectedCount(String(record.seleccionado));
+    setNecropsyMotive(record.motivo);
+    setNecropsyExternalNote(record.hallazgoExterno);
+    setNecropsyInternalNote(record.hallazgoInterno);
+    setNecropsyPresumptiveDx(record.diagnosticoPresuntivo);
+    setNecropsyObservations(record.observaciones);
+    setSelectedNecropsyPrimary(record.clasificacionPrimaria);
+    setSelectedNecropsySecondary(record.clasificacionSecundaria);
+    setSelectedCentro(record.centro);
+    setSelectedModulo(record.modulo);
+    setSelectedJaula(record.jaula);
   };
 
   const linkSamplingToCurrentVisit = () => {
@@ -1477,6 +1668,34 @@ export default function App() {
     setToast(`Visita ${visit.id} eliminada`);
   };
 
+  const saveNecropsyRecord = () => {
+    const base = selectedNecropsy || necropsySeed[0];
+    const updated: NecropsyRecord = {
+      ...base,
+      seleccionado: Number(necropsySelectedCount || 0),
+      motivo: necropsyMotive,
+      hallazgoExterno: necropsyExternalNote.trim(),
+      hallazgoInterno: necropsyInternalNote.trim(),
+      diagnosticoPresuntivo: necropsyPresumptiveDx.trim(),
+      observaciones: necropsyObservations.trim(),
+      clasificacionPrimaria: selectedNecropsyPrimary,
+      clasificacionSecundaria: selectedNecropsySecondary,
+      centro: selectedCentro,
+      modulo: selectedModulo,
+      jaula: selectedJaula,
+      veterinario: selectedVisit.veterinario,
+      estadoSanitario: selectedVisit.estadoSanitario,
+    };
+    setNecropsyRecords((prev) => prev.map((record) => (record.id === updated.id ? updated : record)));
+    setNecropsyNote(
+      `${updated.diagnosticoPresuntivo || "Sin diagnóstico"} · ${updated.clasificacionSecundaria.join(", ")}`
+    );
+    setMortalityNote(
+      `Pontón de ensilaje · ${updated.jaula} · ${updated.clasificacionSecundaria.join(", ")} · ${updated.seleccionado} peces`
+    );
+    setToast(`Necropsia ${updated.id} actualizada`);
+  };
+
   const resetClinicalData = () => {
     setInspectionNote("");
     setNecropsyNote("");
@@ -1520,6 +1739,7 @@ export default function App() {
       visita: selectedVisit,
       historial: filteredMedicalHistory,
       mortalidad: mortalityForContext,
+      necropsias: necropsyRecords,
       reporte: generatedReport,
       exportedAt: new Date().toISOString(),
     };
@@ -1534,6 +1754,27 @@ export default function App() {
     a.click();
     URL.revokeObjectURL(url);
     setToast("Resumen exportado en JSON local");
+  };
+
+  const exportNecropsySheet = () => {
+    const record = selectedNecropsy;
+    const payload = {
+      necropsia: record,
+      clasificacionPrimaria: selectedNecropsyPrimary,
+      clasificacionSecundaria: selectedNecropsySecondary,
+      fechaExportacion: new Date().toISOString(),
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${record.id}-tabilla-necropsia.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setToast("Tabilla de necropsia exportada");
   };
 
   const sendToTeams = () => {
@@ -1564,7 +1805,7 @@ export default function App() {
             <section className="overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0F6CBD] to-[#115EA3] p-5 text-white shadow-xl">
               <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Flujo de terreno</p>
               <h2 className="mt-2 text-2xl font-semibold leading-tight">
-                Centro → módulo → jaula → historial → registro → reporte
+                Centro → módulo → jaula → historial → registro → pontón de ensilaje → mortalidades → necropsias → reporte
               </h2>
 
               <div className="mt-4 grid grid-cols-2 gap-3">
@@ -1596,7 +1837,7 @@ export default function App() {
 
             <AccordionSection
               title="Módulos del sistema"
-              subtitle="Los módulos se abren desde inicio. Muestreo también puede abrirse desde una visita activa."
+              subtitle="Los módulos se abren desde inicio. Muestreo y necropsias también pueden abrirse desde una visita activa."
               defaultOpen
             >
               <div className="grid grid-cols-2 gap-3">
@@ -1625,6 +1866,32 @@ export default function App() {
                     Toma de muestras independiente o vinculada a visita.
                   </p>
                 </button>
+
+                <button
+                  onClick={() => {
+                    setTab("necropsias");
+                    hydrateNecropsyEditor(selectedNecropsy);
+                  }}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-rose-600 hover:bg-rose-50"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-700">
+                    <Skull className="h-5 w-5" />
+                  </div>
+                  <p className="mt-3 text-sm font-semibold text-slate-900">Módulo necropsias</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Pontón de ensilaje → mortalidades → clasificación → impresión.
+                  </p>
+                </button>
+
+                {/* <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                    <PackageOpen className="h-5 w-5" />
+                  </div>
+                  <p className="mt-3 text-sm font-semibold text-slate-900">Bitácora pontón</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Respaldo documental conectado al módulo de necropsias.
+                  </p>
+                </div> */}
               </div>
 
               <div className="mt-3 space-y-3">
@@ -1664,6 +1931,7 @@ export default function App() {
                 ))}
               </div>
             </section>
+
             <AccordionSection
               title="Antecedentes productivos"
               subtitle="N° peces, peso promedio, biomasa y mortalidad"
@@ -1697,11 +1965,7 @@ export default function App() {
               </div>
             </AccordionSection>
 
-            <AccordionSection
-              title="Antecedentes ambientales"
-              subtitle="Temperatura y oxígeno del entorno"
-              defaultOpen
-            >
+            <AccordionSection title="Antecedentes ambientales" subtitle="Temperatura y oxígeno del entorno" defaultOpen>
               <div className="grid grid-cols-2 gap-3">
                 <MetricCard
                   label="Temperatura"
@@ -1814,23 +2078,32 @@ export default function App() {
             </section>
 
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="rounded-2xl bg-[#E8F3FC] p-4">
+              <div className="space-y-3 rounded-2xl bg-[#E8F3FC] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">Tomar muestra asociada a esta visita</p>
+                    <p className="text-sm font-semibold text-slate-900">Flujos asociados a esta visita</p>
                     <p className="mt-1 text-sm text-slate-600">
-                      Abre el módulo de muestreo y deja la muestra vinculada a la visita activa.
+                      Muestreo y necropsias pueden abrirse y quedar alineados con centro, módulo y jaula.
                     </p>
                   </div>
-                  <FlaskConical className="mt-1 h-5 w-5 text-[#0F6CBD]" />
+                  <ClipboardList className="mt-1 h-5 w-5 text-[#0F6CBD]" />
                 </div>
-                <button
-                  onClick={openSamplingFromVisit}
-                  className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] text-sm font-semibold text-white"
-                >
-                  <FlaskConical className="h-4 w-4" />
-                  Ir a módulo muestreo asociado
-                </button>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    onClick={openSamplingFromVisit}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] text-sm font-semibold text-white"
+                  >
+                    <FlaskConical className="h-4 w-4" />
+                    Ir a muestreo asociado
+                  </button>
+                  <button
+                    onClick={openNecropsyFromVisit}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[#0F6CBD] bg-white text-sm font-semibold text-[#0F6CBD]"
+                  >
+                    <Skull className="h-4 w-4" />
+                    Ir a necropsias asociadas
+                  </button>
+                </div>
               </div>
             </section>
 
@@ -1882,183 +2155,43 @@ export default function App() {
                     onChange={(e) => setSelectedJaula(e.target.value)}
                     className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
                   >
-                    {Array.from(new Set(visits.filter((v) => v.modulo === selectedModulo).map((v) => v.jaula))).map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
+                    {Array.from(new Set(visits.filter((v) => v.modulo === selectedModulo).map((v) => v.jaula))).map(
+                      (item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      )
+                    )}
                   </select>
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3">
-              <MetricCard label="Estado jaula" value={selectedVisit.estadoSanitario} icon={ClipboardCheck} tone="emerald" />
-                <MetricCard
-                  label="Mortalidad total"
-                  value={mortalityForContext.reduce((acc, item) => acc + item.total, 0)}
-                  icon={Activity}
-                  tone="slate"
-                />
-                <MetricCard label="Eventos previos" value={filteredMedicalHistory.length} icon={History} tone="blue" />
-                
-                <MetricCard label="Causa principal" value={dominantCause} icon={AlertTriangle} tone="amber" />
-                
+              <div className="mt-4 space-y-3">
+                {lastMedicalEvents.map((item) => (
+                  <div key={item.id} className="rounded-2xl bg-slate-50 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-slate-900">{item.tipo}</p>
+                      <StatusBadge value={item.nivel} />
+                    </div>
+                    <p className="mt-1 text-sm text-slate-600">{item.detalle}</p>
+                    <p className="mt-2 text-xs text-slate-400">
+                      {item.fecha} · {item.responsable}
+                    </p>
+                  </div>
+                ))}
               </div>
             </section>
 
-            <AccordionSection
-              title="Módulo visita"
-              subtitle="Descripción: Las visitas a terreno realizadas por un médico veterinario están orientadas al control sanitario, cumplimiento normativo, seguimiento productivo y diagnóstico clínico."
-              defaultOpen
-            >
-              {/* <div className="rounded-2xl bg-[#E8F3FC] p-4 text-sm text-slate-700">
-                <p className="font-semibold text-slate-900">Configuración rápida de visita</p>
-                <p className="mt-1">
-                  El documento clasifica las visitas según su finalidad, origen de la solicitud o exigencias normativas. Para evitar escritura, el flujo principal queda estructurado en selección múltiple.
-                </p>
-              </div> */}
-
-              <div className="mt-4 space-y-3">
-                <AccordionSection title="Tipo de visita" defaultOpen>
-                  <div className="grid grid-cols-2 gap-3">
-                    {visitTypeOptions.map((item) => (
-                      <ActionChip
-                        key={item}
-                        label={item}
-                        active={selectedVisitTypes.includes(item)}
-                        onClick={() => toggleInArray(item, setSelectedVisitTypes)}
-                      />
-                    ))}
-                  </div>
-                </AccordionSection>
-
-                <AccordionSection title="Objetivo" >
-                  <div className="grid grid-cols-2 gap-3">
-                    {visitObjectiveOptions.map((item) => (
-                      <ActionChip
-                        key={item}
-                        label={item}
-                        active={selectedVisitObjectives.includes(item)}
-                        onClick={() => toggleInArray(item, setSelectedVisitObjectives)}
-                      />
-                    ))}
-                  </div>
-                </AccordionSection>
-
-                <AccordionSection title="Frecuencia" >
-                  <div className="grid grid-cols-2 gap-3">
-                    {visitFrequencyOptions.map((item) => (
-                      <ActionChip
-                        key={item}
-                        label={item}
-                        active={selectedVisitFrequencies.includes(item)}
-                        onClick={() => toggleInArray(item, setSelectedVisitFrequencies)}
-                      />
-                    ))}
-                  </div>
-                </AccordionSection>
-
-                <AccordionSection title="Actividades de la visita" >
-                  <div className="grid grid-cols-2 gap-3">
-                    {visitActivityOptions.map((item) => (
-                      <ActionChip
-                        key={item}
-                        label={item}
-                        active={selectedVisitActivities.includes(item)}
-                        onClick={() => toggleInArray(item, setSelectedVisitActivities)}
-                      />
-                    ))}
-                  </div>
-                </AccordionSection>
-
-                <AccordionSection title="Programa / específico" >
-                  <div className="grid grid-cols-2 gap-3">
-                    {visitSpecificProgramOptions.map((item) => (
-                      <ActionChip
-                        key={item}
-                        label={item}
-                        active={selectedVisitPrograms.includes(item)}
-                        onClick={() => toggleInArray(item, setSelectedVisitPrograms)}
-                      />
-                    ))}
-                  </div>
-                </AccordionSection>
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="Últimos antecedentes" subtitle="Historial sanitario relevante">
-              <div className="space-y-3">
-                {lastMedicalEvents.length ? (
-                  lastMedicalEvents.map((event) => (
-                    <div key={event.id} className="rounded-2xl bg-slate-50 p-4">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-slate-900">{event.tipo}</p>
-                        <StatusBadge value={event.nivel} />
-                      </div>
-                      <p className="mt-2 text-sm text-slate-600">{event.detalle}</p>
-                      <p className="mt-2 text-xs text-slate-500">
-                        {event.fecha} · {event.responsable}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
-                    No hay antecedentes para esta selección.
-                  </div>
-                )}
-              </div>
-            </AccordionSection>
-
-            <AccordionSection
-              title="Antecedentes productivos"
-              subtitle="Información productiva del módulo/jaula"
-              defaultOpen
-            >
-              <div className="grid grid-cols-2 gap-3">
-                <MetricCard
-                  label="N° peces"
-                  value={(selectedVisit?.numeroPeces ?? 0).toLocaleString("es-CL")}
-                  icon={Layers3}
-                  tone="blue"
-                />
-
-                <MetricCard
-                  label="Peso promedio"
-                  value={`${selectedVisit?.pesoPromedio ?? 0} kg`}
-                  icon={Grid3X3}
-                  tone="blue"
-                />
-                <MetricCard label="Biomasa" value={selectedVisit.biomasa} icon={Activity} />
-                <MetricCard label="Mortalidad" value={selectedVisit.mortalidad} icon={AlertTriangle} />
-              </div>
-            </AccordionSection>
-
-            <AccordionSection
-              title="Antecedentes ambientales"
-              subtitle="Condiciones del agua"
-              defaultOpen
-            >
-              <div className="grid grid-cols-2 gap-3">
-                <MetricCard label="Temperatura" value={selectedVisit.temperatura} icon={Thermometer} />
-                <MetricCard label="Oxígeno" value={selectedVisit.oxigeno} icon={Atom} />
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="Inspección visual" subtitle="Registro breve de comportamiento y observación" defaultOpen>
-              <div className="flex justify-end">
-                <button onClick={() => act("Simulación de dictado iniciada")} className="text-sm font-medium text-[#0F6CBD]">
-                  Dictar
-                </button>
-              </div>
+            <AccordionSection title="Inspección visual" subtitle="Hallazgos de jaula" defaultOpen>
               <textarea
                 value={inspectionNote}
                 onChange={(e) => setInspectionNote(e.target.value)}
-                className="mt-3 min-h-[110px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
-                placeholder="Complemento opcional del módulo visita"
+                className="min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
+                placeholder="Registra signos clínicos, nado, alimentación, boqueo u observaciones"
               />
-              <div className="mt-3 grid grid-cols-3 gap-3">
+              <div className="mt-4 grid grid-cols-3 gap-2">
                 <button
-                  onClick={() => act("Dictado activado")}
+                  onClick={() => act("Dictado simulado")}
                   className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-medium text-slate-700"
                 >
                   <Mic className="h-4 w-4" />
@@ -2099,16 +2232,18 @@ export default function App() {
               />
               <div className="mt-4 space-y-2">
                 {aggregatedByCause.slice(0, 5).map((item) => (
-                  <div key={item.causa} className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-sm">
-                    <span className="font-medium text-slate-800">{item.causa}</span>
-                    <span className="font-semibold text-slate-900">{item.total}</span>
+                  <div key={item.causa} className="rounded-2xl bg-slate-50 p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-slate-800">{item.causa}</p>
+                      <p className="text-sm font-semibold text-slate-900">{item.total}</p>
+                    </div>
                   </div>
                 ))}
               </div>
             </AccordionSection>
 
-            <AccordionSection title="Diagnóstico presuntivo" subtitle="Selección rápida">
-              <div className="grid grid-cols-2 gap-3">
+            <AccordionSection title="Diagnóstico" subtitle="Selección múltiple">
+              <div className="grid grid-cols-2 gap-2">
                 {diagnosisOptions.map((item) => (
                   <ActionChip
                     key={item}
@@ -2120,8 +2255,8 @@ export default function App() {
               </div>
             </AccordionSection>
 
-            <AccordionSection title="Tratamiento / receta" subtitle="Acciones indicadas">
-              <div className="grid grid-cols-2 gap-3">
+            <AccordionSection title="Acciones sugeridas" subtitle="Selección múltiple">
+              <div className="grid grid-cols-2 gap-2">
                 {actionOptions.map((item) => (
                   <ActionChip
                     key={item}
@@ -2131,531 +2266,621 @@ export default function App() {
                   />
                 ))}
               </div>
+            </AccordionSection>
+
+            <AccordionSection title="Tipo de visita" subtitle="Clasificación operativa">
+              <div className="grid grid-cols-1 gap-2">
+                {visitTypeOptions.map((item) => (
+                  <ActionChip
+                    key={item}
+                    label={item}
+                    active={selectedVisitTypes.includes(item)}
+                    onClick={() => toggleInArray(item, setSelectedVisitTypes)}
+                  />
+                ))}
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Objetivos de visita" subtitle="Selección múltiple">
+              <div className="grid grid-cols-2 gap-2">
+                {visitObjectiveOptions.map((item) => (
+                  <ActionChip
+                    key={item}
+                    label={item}
+                    active={selectedVisitObjectives.includes(item)}
+                    onClick={() => toggleInArray(item, setSelectedVisitObjectives)}
+                  />
+                ))}
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Frecuencia de visita" subtitle="Selección múltiple">
+              <div className="grid grid-cols-2 gap-2">
+                {visitFrequencyOptions.map((item) => (
+                  <ActionChip
+                    key={item}
+                    label={item}
+                    active={selectedVisitFrequencies.includes(item)}
+                    onClick={() => toggleInArray(item, setSelectedVisitFrequencies)}
+                  />
+                ))}
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Actividades de visita" subtitle="Selección múltiple">
+              <div className="grid grid-cols-2 gap-2">
+                {visitActivityOptions.map((item) => (
+                  <ActionChip
+                    key={item}
+                    label={item}
+                    active={selectedVisitActivities.includes(item)}
+                    onClick={() => toggleInArray(item, setSelectedVisitActivities)}
+                  />
+                ))}
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Programa específico" subtitle="Selección múltiple">
+              <div className="grid grid-cols-2 gap-2">
+                {visitSpecificProgramOptions.map((item) => (
+                  <ActionChip
+                    key={item}
+                    label={item}
+                    active={selectedVisitPrograms.includes(item)}
+                    onClick={() => toggleInArray(item, setSelectedVisitPrograms)}
+                  />
+                ))}
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Tratamiento / receta" subtitle="Observaciones">
               <textarea
                 value={treatmentNote}
                 onChange={(e) => setTreatmentNote(e.target.value)}
-                className="mt-4 min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
-                placeholder="Complemento opcional del módulo visita"
+                className="min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
+                placeholder="Tratamiento, receta, medidas de contención o seguimiento"
               />
             </AccordionSection>
 
-            <AccordionSection title="Checklist" subtitle="Control rápido de la visita">
-              <div className="mb-3 flex justify-end">
-                <button onClick={resetClinicalData} className="text-sm font-medium text-[#0F6CBD]">
-                  Limpiar
-                </button>
-              </div>
-              <div className="space-y-3">
-                {checklist.map((item, index) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.label}
-                      onClick={() =>
-                        setChecklist((prev) =>
-                          prev.map((row, i) => (i === index ? { ...row, done: !row.done } : row))
-                        )
-                      }
-                      className="flex w-full items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-left"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#0F6CBD]">
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        <span className="text-sm font-medium text-slate-700">{item.label}</span>
-                      </div>
-                      {item.done ? (
-                        <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                      ) : (
-                        <Clock3 className="h-5 w-5 text-amber-500" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </AccordionSection>
-
-            <div className="grid grid-cols-2 gap-3">
+            <section className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => openEditModal(selectedVisit)}
-                className="flex h-14 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-base font-semibold text-slate-700 shadow-sm"
+                onClick={resetClinicalData}
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
               >
-                <Pencil className="h-5 w-5" />
-                Editar visita
+                <RotateCcw className="h-4 w-4" />
+                Reiniciar
               </button>
               <button
                 onClick={finishVisit}
-                className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] text-base font-semibold text-white shadow-lg"
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] text-sm font-semibold text-white"
               >
-                <BadgeCheck className="h-5 w-5" />
+                <CheckCircle2 className="h-4 w-4" />
                 Finalizar visita
               </button>
-            </div>
+            </section>
           </div>
         )}
 
         {tab === "muestreo" && (
           <div className="space-y-4">
-            <section className="rounded-[28px] bg-gradient-to-br from-emerald-600 to-teal-700 p-5 text-white shadow-xl">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-white/70"></p>
-                  <h2 className="mt-2 text-xl font-semibold">Módulo muestreo</h2>
-                  <p className="mt-2 text-sm text-white/80">
-                    Descripción: En la acuicultura, cuando un médico veterinario realiza una salida a terreno para la toma de muestras, estas pueden clasificarse según su objetivo y el contexto operativo.
-                  </p>
-                </div>
-                <FlaskConical className="h-8 w-8 text-white" />
-              </div>
+            <section className="rounded-[28px] bg-gradient-to-br from-emerald-600 to-emerald-700 p-5 text-white shadow-xl">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Muestreo</p>
+              <h2 className="mt-2 text-xl font-semibold">
+                {samplingContextMode === "visita" && linkedSamplingVisit
+                  ? `Asociado a ${linkedSamplingVisit.id}`
+                  : "Registro independiente"}
+              </h2>
+              <p className="mt-2 text-sm text-white/80">
+                {samplingContextMode === "visita" && linkedSamplingVisit
+                  ? `${linkedSamplingVisit.centro} · ${linkedSamplingVisit.modulo} · ${linkedSamplingVisit.jaula}`
+                  : "Abierto desde menú principal"}
+              </p>
+            </section>
 
-              <div className="mt-4 rounded-2xl bg-white/10 p-4 text-sm">
-                <p className="font-semibold text-white">Contexto del muestreo</p>
-                {samplingContextMode === "visita" && linkedSamplingVisit ? (
-                  <div className="mt-2 space-y-1 text-white/85">
-                    <p>Asociado a visita {linkedSamplingVisit.id}</p>
-                    <p>{linkedSamplingVisit.centro} · {linkedSamplingVisit.modulo} · {linkedSamplingVisit.jaula}</p>
-                    <p>Veterinario responsable: {linkedSamplingVisit.veterinario}</p>
-                  </div>
-                ) : (
-                  <p className="mt-2 text-white/85">
-                    Registro abierto desde inicio como muestreo independiente. Puede vincularse luego a la visita activa.
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <SectionHeader title="Contexto del muestreo" />
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={linkSamplingToCurrentVisit}
-                  className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-white font-semibold text-emerald-700"
+                  className="h-11 rounded-2xl border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-700"
                 >
-                  <ClipboardCheck className="h-4 w-4" />
-                  Asociar a visita activa
+                  Vincular a visita
                 </button>
                 <button
                   onClick={unlinkSamplingFromVisit}
-                  className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 font-semibold text-white"
+                  className="h-11 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
                 >
-                  <RotateCcw className="h-4 w-4" />
                   Dejar independiente
                 </button>
               </div>
             </section>
 
-            <AccordionSection
-              title="Módulo muestreo"
-              subtitle="Descripción: En la acuicultura, cuando un médico veterinario realiza una salida a terreno para la toma de muestras, estas pueden clasificarse según su objetivo y el contexto operativo."
-              defaultOpen
-            >
-              {/* <div className="rounded-2xl bg-emerald-50 p-4 text-sm text-slate-700">
-                <p className="font-semibold text-slate-900">Configuración rápida de muestreo</p>
-                <p className="mt-1">
-                  Se incorporan categorías y tipos de muestra del documento para que el veterinario seleccione sin escribir en terreno.
-                </p>
-              </div> */}
-
-              <div className="mt-4 space-y-3">
-                <AccordionSection title="Categoría de muestreo" defaultOpen>
-                  <div className="grid grid-cols-2 gap-3">
-                    {samplingCategoryOptions.map((item) => (
-                      <ActionChip
-                        key={item}
-                        label={item}
-                        active={selectedSamplingCategories.includes(item)}
-                        onClick={() => toggleInArray(item, setSelectedSamplingCategories)}
-                      />
-                    ))}
-                  </div>
-                </AccordionSection>
-
-                <AccordionSection title="Objetivo del muestreo" >
-                  <div className="grid grid-cols-2 gap-3">
-                    {samplingObjectiveOptions.map((item) => (
-                      <ActionChip
-                        key={item}
-                        label={item}
-                        active={selectedSamplingObjectives.includes(item)}
-                        onClick={() => toggleInArray(item, setSelectedSamplingObjectives)}
-                      />
-                    ))}
-                  </div>
-                </AccordionSection>
-
-                <AccordionSection title="Enfermedad / agente / foco" >
-                  <div className="grid grid-cols-2 gap-3">
-                    {samplingDiseaseOptions.map((item) => (
-                      <ActionChip
-                        key={item}
-                        label={item}
-                        active={selectedSamplingDiseases.includes(item)}
-                        onClick={() => toggleInArray(item, setSelectedSamplingDiseases)}
-                      />
-                    ))}
-                  </div>
-                </AccordionSection>
-
-                <AccordionSection title="Tipo de muestra" >
-                  <div className="grid grid-cols-2 gap-3">
-                    {samplingTypeOptions.map((item) => (
-                      <ActionChip
-                        key={item}
-                        label={item}
-                        active={selectedSamplingTypes.includes(item)}
-                        onClick={() => toggleInArray(item, setSelectedSamplingTypes)}
-                      />
-                    ))}
-                  </div>
-                </AccordionSection>
-
-                <AccordionSection title="Apoyo ambiental / envío / certificación" >
-                  <div className="grid grid-cols-2 gap-3">
-                    {samplingEnvironmentOptions.map((item) => (
-                      <ActionChip
-                        key={item}
-                        label={item}
-                        active={selectedSamplingEnvironment.includes(item)}
-                        onClick={() => toggleInArray(item, setSelectedSamplingEnvironment)}
-                      />
-                    ))}
-                  </div>
-                </AccordionSection>
+            <AccordionSection title="Categoría de muestreo" subtitle="Selección múltiple" defaultOpen>
+              <div className="grid grid-cols-1 gap-2">
+                {samplingCategoryOptions.map((item) => (
+                  <ActionChip
+                    key={item}
+                    label={item}
+                    active={selectedSamplingCategories.includes(item)}
+                    onClick={() => toggleInArray(item, setSelectedSamplingCategories)}
+                  />
+                ))}
               </div>
+            </AccordionSection>
 
+            <AccordionSection title="Objetivos de muestreo" subtitle="Selección múltiple">
+              <div className="grid grid-cols-2 gap-2">
+                {samplingObjectiveOptions.map((item) => (
+                  <ActionChip
+                    key={item}
+                    label={item}
+                    active={selectedSamplingObjectives.includes(item)}
+                    onClick={() => toggleInArray(item, setSelectedSamplingObjectives)}
+                  />
+                ))}
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Enfermedades / agentes" subtitle="Selección múltiple">
+              <div className="grid grid-cols-2 gap-2">
+                {samplingDiseaseOptions.map((item) => (
+                  <ActionChip
+                    key={item}
+                    label={item}
+                    active={selectedSamplingDiseases.includes(item)}
+                    onClick={() => toggleInArray(item, setSelectedSamplingDiseases)}
+                  />
+                ))}
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Tipo de muestra" subtitle="Selección múltiple">
+              <div className="grid grid-cols-2 gap-2">
+                {samplingTypeOptions.map((item) => (
+                  <ActionChip
+                    key={item}
+                    label={item}
+                    active={selectedSamplingTypes.includes(item)}
+                    onClick={() => toggleInArray(item, setSelectedSamplingTypes)}
+                  />
+                ))}
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Apoyo ambiental / logístico" subtitle="Selección múltiple">
+              <div className="grid grid-cols-2 gap-2">
+                {samplingEnvironmentOptions.map((item) => (
+                  <ActionChip
+                    key={item}
+                    label={item}
+                    active={selectedSamplingEnvironment.includes(item)}
+                    onClick={() => toggleInArray(item, setSelectedSamplingEnvironment)}
+                  />
+                ))}
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Nota de muestreo" subtitle="Observaciones">
               <textarea
                 value={samplingNote}
                 onChange={(e) => setSamplingNote(e.target.value)}
-                className="mt-4 min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
-                placeholder="Complemento opcional del módulo muestreo"
+                className="min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-emerald-600 focus:bg-white"
+                placeholder="Detalle del muestreo, laboratorio, envío y observaciones"
+              />
+            </AccordionSection>
+          </div>
+        )}
+
+        {tab === "necropsias" && (
+          <div className="space-y-4">
+            <section className="rounded-[28px] bg-gradient-to-br from-rose-600 to-rose-700 p-5 text-white shadow-xl">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Pontón de ensilaje</p>
+              <h2 className="mt-2 text-xl font-semibold">Mortalidades → Módulo necropsias</h2>
+              <p className="mt-2 text-sm text-white/80">
+                Selección de peces, clasificación, hallazgos y salida documental imprimible.
+              </p>
+            </section>
+
+            <SearchBox
+              value={search}
+              onChange={setSearch}
+              onClear={() => setSearch("")}
+              placeholder="Buscar necropsia, centro, módulo o jaula"
+            />
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <SectionHeader title="Bandeja de mortalidades / necropsias" subtitle="Registros del pontón" />
+              <div className="space-y-3">
+                {necropsyForContext.map((record) => (
+                  <button
+                    key={record.id}
+                    onClick={() => {
+                      setSelectedNecropsyId(record.id);
+                      hydrateNecropsyEditor(record);
+                    }}
+                    className={cn(
+                      "block w-full rounded-2xl border p-4 text-left",
+                      selectedNecropsyId === record.id
+                        ? "border-rose-300 bg-rose-50"
+                        : "border-slate-200 bg-slate-50"
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{record.id}</p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {record.centro} · {record.modulo} · {record.jaula}
+                        </p>
+                        <p className="mt-2 text-xs text-slate-500">
+                          Mortalidad día: {record.mortalidadDia} · Tratamientos: {record.nroTratamientos} · Baños:{" "}
+                          {record.nroBanos}
+                        </p>
+                      </div>
+                      <StatusBadge value={record.estadoSanitario} />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="grid grid-cols-2 gap-3">
+              <MetricCard label="Mortalidad día" value={selectedNecropsy.mortalidadDia} icon={AlertTriangle} tone="amber" />
+              <MetricCard
+                label="Mortalidad mes"
+                value={`${selectedNecropsy.mortalidadMesPct}%`}
+                icon={Activity}
+                tone="blue"
+              />
+              <MetricCard
+                label="Mortalidad acc."
+                value={`${selectedNecropsy.mortalidadAcumuladaPct}%`}
+                icon={ClipboardList}
+                tone="amber"
+              />
+              <MetricCard label="N° tratamientos" value={selectedNecropsy.nroTratamientos} icon={Pill} tone="emerald" />
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <SectionHeader title="Contexto del pontón" subtitle="Centro, módulo, jaula y estatus" />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Centro</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{selectedCentro}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Módulo / Jaula</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">
+                    {selectedModulo} · {selectedJaula}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Veterinario</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{selectedVisit.veterinario}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Estado sanitario</p>
+                  <div className="mt-1">
+                    <StatusBadge value={selectedVisit.estadoSanitario} />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <AccordionSection title="Selección para necropsia" subtitle="Peces a revisar" defaultOpen>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium text-slate-700">N° seleccionados</label>
+                  <input
+                    value={necropsySelectedCount}
+                    onChange={(e) => setNecropsySelectedCount(e.target.value)}
+                    className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-600 focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700">Motivo</label>
+                  <select
+                    value={necropsyMotive}
+                    onChange={(e) => setNecropsyMotive(e.target.value as NecropsyRecord["motivo"])}
+                    className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-600 focus:bg-white"
+                  >
+                    {necropsyMotiveOptions.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="mt-3 rounded-2xl bg-slate-50 p-3">
+                <p className="text-sm text-slate-700">
+                  Origen: <span className="font-semibold">{selectedNecropsy.origen}</span>
+                </p>
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Hallazgos macroscópicos" subtitle="Externo e interno">
+              <div className="space-y-3">
+                <textarea
+                  value={necropsyExternalNote}
+                  onChange={(e) => setNecropsyExternalNote(e.target.value)}
+                  className="min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-rose-600 focus:bg-white"
+                  placeholder="Hallazgos externos"
+                />
+                <textarea
+                  value={necropsyInternalNote}
+                  onChange={(e) => setNecropsyInternalNote(e.target.value)}
+                  className="min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-rose-600 focus:bg-white"
+                  placeholder="Hallazgos internos / órganos / hemorragias / necrosis"
+                />
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Diagnóstico presuntivo" subtitle="Resumen clínico">
+              <input
+                value={necropsyPresumptiveDx}
+                onChange={(e) => setNecropsyPresumptiveDx(e.target.value)}
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-600 focus:bg-white"
+                placeholder="SRS, PGD, HSMI u otro"
               />
             </AccordionSection>
 
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setTab("inicio")}
-                className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-sm"
-              >
-                <Home className="h-4 w-4" />
-                Volver a inicio
-              </button>
-              <button
-                onClick={() => setTab("resumen")}
-                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] text-sm font-semibold text-white shadow-lg"
-              >
-                <FileText className="h-4 w-4" />
-                Ir a resumen
-              </button>
-            </div>
+            <AccordionSection title="Clasificación primaria" subtitle="Tabilla R-Sal-11">
+              <div className="grid grid-cols-2 gap-2">
+                {mortalityPrimaryOptions.map((item) => (
+                  <ActionChip
+                    key={item}
+                    label={item}
+                    active={selectedNecropsyPrimary.includes(item)}
+                    onClick={() => toggleInArray(item, setSelectedNecropsyPrimary)}
+                  />
+                ))}
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Clasificación secundaria" subtitle="Causas sanitarias">
+              <div className="grid grid-cols-2 gap-2">
+                {(["PGD", "HSMI", "SRS", "TENA", "Rezago", "ONI", "Deforme", "Daño físico", "BKD", "Otras"] as MortalityCause[]).map(
+                  (item) => (
+                    <ActionChip
+                      key={item}
+                      label={item}
+                      active={selectedNecropsySecondary.includes(item)}
+                      onClick={() => toggleNecropsySecondary(item)}
+                    />
+                  )
+                )}
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Observaciones y salida documental" subtitle="Bitácora / impresión">
+              <textarea
+                value={necropsyObservations}
+                onChange={(e) => setNecropsyObservations(e.target.value)}
+                className="min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-rose-600 focus:bg-white"
+                placeholder="Notas para bitácora del pontón, impresión y firma"
+              />
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button
+                  onClick={saveNecropsyRecord}
+                  className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-rose-600 text-sm font-semibold text-white"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Guardar necropsia
+                </button>
+                <button
+                  onClick={exportNecropsySheet}
+                  className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
+                >
+                  <Printer className="h-4 w-4" />
+                  Exportar tabilla
+                </button>
+              </div>
+            </AccordionSection>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <SectionHeader title="Resumen rápido del registro" subtitle="Lo que quedará integrado al mockup" />
+              <div className="space-y-2 text-sm text-slate-700">
+                <p>
+                  <span className="font-semibold">ID:</span> {selectedNecropsy.id}
+                </p>
+                <p>
+                  <span className="font-semibold">Pontón:</span> {selectedNecropsy.origen}
+                </p>
+                <p>
+                  <span className="font-semibold">Mortalidades:</span> {selectedNecropsy.mortalidadDia} día /{" "}
+                  {selectedNecropsy.mortalidadMesPct}% mes / {selectedNecropsy.mortalidadAcumuladaPct}% acc.
+                </p>
+                <p>
+                  <span className="font-semibold">Clasificación secundaria:</span>{" "}
+                  {selectedNecropsySecondary.join(", ") || "Sin selección"}
+                </p>
+              </div>
+            </section>
           </div>
         )}
 
         {tab === "resumen" && (
           <div className="space-y-4">
-            <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Reporte listo</p>
-                  <h2 className="mt-2 text-xl font-semibold text-slate-900">{selectedVisit.centro}</h2>
-                  <p className="mt-2 text-sm text-slate-500">
-                    {selectedVisit.empresa} · ID {selectedVisit.id}
+            <section className="rounded-[28px] bg-gradient-to-br from-slate-900 to-slate-700 p-5 text-white shadow-xl">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Resumen integrado</p>
+              <h2 className="mt-2 text-xl font-semibold">{selectedVisit.id}</h2>
+              <p className="mt-2 text-sm text-white/80">
+                {selectedVisit.centro} · {selectedModulo} · {selectedJaula}
+              </p>
+            </section>
+
+            <AccordionSection title="Ficha sanitaria" subtitle="Visita + muestreo + necropsia" defaultOpen>
+              <div className="space-y-3 text-sm text-slate-700">
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="font-semibold text-slate-900">Visita</p>
+                  <p className="mt-1">{generatedReport.tipoVisita}</p>
+                  <p className="mt-1">{generatedReport.objetivoVisita}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="font-semibold text-slate-900">Muestreo</p>
+                  <p className="mt-1">{generatedReport.categoriaMuestreo}</p>
+                  <p className="mt-1">{generatedReport.tipoMuestra}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="font-semibold text-slate-900">Necropsia</p>
+                  <p className="mt-1">{generatedReport.necropsiaIntegrada.diagnosticoPresuntivo}</p>
+                  <p className="mt-1">
+                    {generatedReport.necropsiaIntegrada.clasificacionPrimaria} /{" "}
+                    {generatedReport.necropsiaIntegrada.clasificacionSecundaria}
                   </p>
                 </div>
-                <StatusBadge value="Completada" />
               </div>
+            </AccordionSection>
 
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <button
-                  onClick={exportSummary}
-                  className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-medium text-slate-700"
-                >
-                  <Download className="h-4 w-4" />
-                  Exportar
-                </button>
-                <button
-                  onClick={sendToTeams}
-                  className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] text-sm font-medium text-white"
-                >
-                  <Send className="h-4 w-4" />
-                  Enviar
-                </button>
+            <AccordionSection title="Mortalidad y causas" subtitle="Distribución del contexto">
+              <div className="space-y-2">
+                {aggregatedByCause.map((item) => (
+                  <div key={item.causa} className="flex items-center justify-between rounded-2xl bg-slate-50 p-3">
+                    <p className="text-sm font-medium text-slate-800">{item.causa}</p>
+                    <p className="text-sm font-semibold text-slate-900">{item.total}</p>
+                  </div>
+                ))}
               </div>
-            </section>
+            </AccordionSection>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <SectionHeader title="Destino del reporte" subtitle="Listo para impresión o envío" />
+            <AccordionSection title="Destino del reporte" subtitle="Impresión / envío">
               <div className="rounded-2xl bg-slate-50 p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#E8F3FC] text-[#0F6CBD]">
-                    <Printer className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">{generatedReport.destinatario.nombre}</p>
-                    <p className="text-xs text-slate-500">
-                      {generatedReport.destinatario.cargo} · {generatedReport.destinatario.canal}
-                    </p>
-                  </div>
-                </div>
+                <p className="text-sm text-slate-700">
+                  <span className="font-semibold">Destinatario:</span> {recipient.nombre}
+                </p>
+                <p className="mt-1 text-sm text-slate-700">
+                  <span className="font-semibold">Cargo:</span> {recipient.cargo}
+                </p>
+                <p className="mt-1 text-sm text-slate-700">
+                  <span className="font-semibold">Canal:</span> {recipient.canal}
+                </p>
               </div>
-            </section>
+            </AccordionSection>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <SectionHeader
-                title="Resumen final"
-                subtitle="Contenido principal del reporte"
-                action={
-                  <button onClick={() => setTab("registro")} className="text-sm font-medium text-[#0F6CBD]">
-                    Editar
-                  </button>
-                }
-              />
-              <div className="space-y-4 text-sm">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="font-medium text-slate-500">Centro</p>
-                    <p className="mt-1 leading-7 text-slate-700">{generatedReport.centro}</p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="font-medium text-slate-500">Módulo / Jaula</p>
-                    <p className="mt-1 leading-7 text-slate-700">
-                      {generatedReport.modulo} · {generatedReport.jaula}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="font-medium text-slate-500">Estado sanitario</p>
-                  <div className="mt-2">
-                    <StatusBadge value={generatedReport.estadoSanitario} />
-                  </div>
-                </div>
-
-                <div>
-                  <p className="font-medium text-slate-500">Tipo de visita</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.tipoVisita}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Objetivo de visita</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.objetivoVisita}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Frecuencia / origen</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.frecuenciaVisita}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Actividades de visita</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.actividadesVisita}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Programa específico</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.programasVisita}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Inspección visual</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.inspeccion}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Necropsia</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.necropsia}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Mortalidad</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.mortalidadDetalle}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Diagnóstico</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.diagnostico}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Tratamiento / receta</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.tratamiento}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Contexto de muestreo</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.contextoMuestreo}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Categoría de muestreo</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.categoriaMuestreo}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Objetivo de muestreo</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.objetivoMuestreo}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Enfermedad / agente</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.enfermedadMuestreo}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Tipo de muestra</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.tipoMuestra}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Apoyo ambiental / envío</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.apoyoMuestreo}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Muestreo</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.muestreo}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Acciones</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.acciones}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-500">Causa principal</p>
-                  <p className="mt-1 leading-7 text-slate-700">{generatedReport.principalCausa}</p>
-                </div>
-              </div>
+            <section className="grid grid-cols-2 gap-3">
+              <button
+                onClick={exportSummary}
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
+              >
+                <Download className="h-4 w-4" />
+                Exportar
+              </button>
+              <button
+                onClick={sendToTeams}
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] text-sm font-semibold text-white"
+              >
+                <Send className="h-4 w-4" />
+                Marcar envío
+              </button>
             </section>
           </div>
         )}
       </main>
 
       <BottomNav tab={tab} setTab={setTab} />
+      <Toast message={toast} onClose={() => setToast("")} />
+
+      <ModalShell open={showNotifications} title="Notificaciones" onClose={() => setShowNotifications(false)}>
+        <div className="space-y-3">
+          {alertsSeed.map((alert) => (
+            <div key={alert.titulo} className="rounded-2xl bg-slate-50 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{alert.titulo}</p>
+                  <p className="mt-1 text-sm text-slate-500">{alert.descripcion}</p>
+                </div>
+                <StatusBadge value={alert.severidad} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </ModalShell>
 
       <ModalShell
         open={showCreateModal}
-        title={editingVisitId ? "Editar visita" : "Crear visita"}
+        title={editingVisitId ? "Editar visita" : "Nueva visita"}
         onClose={() => setShowCreateModal(false)}
       >
         <div className="space-y-3">
-          {[
-            ["Centro", "centro"],
-            ["Empresa", "empresa"],
-            ["Fecha", "fecha"],
-            ["Hora", "hora"],
-            ["Veterinario", "veterinario"],
-            ["Región", "region"],
-            ["Módulo", "modulo"],
-            ["Jaula", "jaula"],
-            ["Biomasa", "biomasa"],
-            ["Mortalidad", "mortalidad"],
-            ["Temperatura", "temperatura"],
-            ["Oxígeno", "oxigeno"],
-          ].map(([label, key]) => {
-            const isDate = key === "fecha";
-            const isTime = key === "hora";
-            const isNumeric = ["biomasa", "mortalidad", "temperatura", "oxigeno"].includes(key);
-
-            return (
-              <div key={key}>
-                <label className="text-sm font-medium text-slate-700">{label}</label>
-                <input
-                  type={isDate ? "date" : isTime ? "time" : isNumeric ? "number" : "text"}
-                  value={(visitForm as Record<string, string>)[key]}
-                  onChange={(e) => setVisitForm((prev) => ({ ...prev, [key]: e.target.value }))}
-                  className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
-                />
-              </div>
-            );
-          })}
+          {(
+            [
+              ["Centro", "centro"],
+              ["Empresa", "empresa"],
+              ["Fecha", "fecha"],
+              ["Hora", "hora"],
+              ["Veterinario", "veterinario"],
+              ["Región", "region"],
+              ["Módulo", "modulo"],
+              ["Jaula", "jaula"],
+              ["N° peces", "numeroPeces"],
+              ["Peso promedio", "pesoPromedio"],
+              ["Biomasa", "biomasa"],
+              ["Mortalidad", "mortalidad"],
+              ["Temperatura", "temperatura"],
+              ["Oxígeno", "oxigeno"],
+            ] as Array<[string, keyof VisitForm]>
+          ).map(([label, key]) => (
+            <div key={key}>
+              <label className="text-sm font-medium text-slate-700">{label}</label>
+              <input
+                type={key === "fecha" ? "date" : key === "hora" ? "time" : "text"}
+                value={visitForm[key]}
+                onChange={(e) => setVisitForm((prev) => ({ ...prev, [key]: e.target.value }))}
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
+              />
+            </div>
+          ))}
 
           <div>
             <label className="text-sm font-medium text-slate-700">Prioridad</label>
-            <div className="mt-2 grid grid-cols-3 gap-2">
+            <select
+              value={visitForm.prioridad}
+              onChange={(e) => setVisitForm((prev) => ({ ...prev, prioridad: e.target.value as Priority }))}
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
+            >
               {(["Alta", "Media", "Baja"] as Priority[]).map((item) => (
-                <button
-                  key={item}
-                  onClick={() => setVisitForm((prev) => ({ ...prev, prioridad: item }))}
-                  className={cn(
-                    "h-11 rounded-2xl border text-sm font-medium",
-                    visitForm.prioridad === item
-                      ? "border-[#0F6CBD] bg-[#E8F3FC] text-[#0F6CBD]"
-                      : "border-slate-200 bg-white text-slate-700"
-                  )}
-                >
+                <option key={item} value={item}>
                   {item}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <div>
             <label className="text-sm font-medium text-slate-700">Estado sanitario</label>
-            <div className="mt-2 grid grid-cols-1 gap-2">
+            <select
+              value={visitForm.estadoSanitario}
+              onChange={(e) =>
+                setVisitForm((prev) => ({ ...prev, estadoSanitario: e.target.value as SanitaryStatus }))
+              }
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
+            >
               {(["En tratamiento", "En carencia", "Sin tratamiento"] as SanitaryStatus[]).map((item) => (
-                <button
-                  key={item}
-                  onClick={() => setVisitForm((prev) => ({ ...prev, estadoSanitario: item }))}
-                  className={cn(
-                    "h-11 rounded-2xl border text-sm font-medium",
-                    visitForm.estadoSanitario === item
-                      ? "border-[#0F6CBD] bg-[#E8F3FC] text-[#0F6CBD]"
-                      : "border-slate-200 bg-white text-slate-700"
-                  )}
-                >
+                <option key={item} value={item}>
                   {item}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-700">Hallazgo inicial</label>
+            <label className="text-sm font-medium text-slate-700">Hallazgo</label>
             <textarea
               value={visitForm.hallazgo}
               onChange={(e) => setVisitForm((prev) => ({ ...prev, hallazgo: e.target.value }))}
-              className="mt-2 min-h-[100px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
+              className="mt-2 min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <button
-              onClick={() => {
-                setVisitForm(defaultForm);
-                setEditingVisitId(null);
-              }}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Limpiar
-            </button>
-            <button
-              onClick={saveVisit}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] text-sm font-semibold text-white"
-            >
-              <Save className="h-4 w-4" />
-              {editingVisitId ? "Guardar" : "Crear"}
-            </button>
-          </div>
-        </div>
-      </ModalShell>
-
-      <ModalShell
-        open={showNotifications}
-        title="Notificaciones"
-        onClose={() => setShowNotifications(false)}
-      >
-        <div className="space-y-3">
-          {alertsSeed.map((alert) => (
-            <button
-              key={alert.titulo}
-              onClick={() => {
-                setShowNotifications(false);
-                act(`${alert.titulo}: ${alert.descripcion}`);
-              }}
-              className="flex w-full items-start justify-between rounded-2xl bg-slate-50 p-4 text-left"
-            >
-              <div>
-                <p className="text-sm font-semibold text-slate-900">{alert.titulo}</p>
-                <p className="mt-1 text-sm text-slate-500">{alert.descripcion}</p>
-              </div>
-              <StatusBadge value={alert.severidad} />
-            </button>
-          ))}
-
           <button
-            onClick={() => {
-              setShowNotifications(false);
-              setTab("inicio");
-            }}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
+            onClick={saveVisit}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] text-sm font-semibold text-white"
           >
-            <Eye className="h-4 w-4" />
-            Ir a inicio
+            <CheckCircle2 className="h-4 w-4" />
+            Guardar visita
           </button>
         </div>
       </ModalShell>
-
-      <Toast message={toast} onClose={() => setToast("")} />
     </div>
   );
 }
