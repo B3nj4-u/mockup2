@@ -845,9 +845,9 @@ function BottomNav({
     { key: "inicio", label: "Inicio", icon: Home },
     { key: "visitas", label: "Visitas", icon: CalendarDays },
     { key: "registro", label: "Diagnóstico", icon: ClipboardPenLine },
+    { key: "muestreo", label: "Muestreos", icon: FlaskConical },
     { key: "necropsias", label: "Necropsias", icon: Stethoscope },
     { key: "resumen", label: "Resumen", icon: FileText },
-    { key: "muestreo", label: "Muestreos", icon: FlaskConical },
   ];
 
   return (
