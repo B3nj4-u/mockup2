@@ -39,6 +39,7 @@ import {
   PackageOpen,
   ClipboardList,
 } from "lucide-react";
+import DiagnosisModule from "./components/DiagnosisModule";
 
 type VisitStatus = "Pendiente" | "En progreso" | "Completada";
 type Priority = "Alta" | "Media" | "Baja";
@@ -164,6 +165,7 @@ const STORAGE_KEYS = {
   historyFilters: "mockup-history-filters-v4",
   samplingFlow: "mockup-sampling-flow-v4",
   necropsyState: "mockup-necropsy-state-v4",
+  diagnosisModuleState: "mockup-diagnosis-module-state-v1",
 };
 
 const visitsSeed: Visit[] = [
@@ -386,11 +388,11 @@ const samplingEnvironmentOptions = [
 ];
 
 const placeholderModules = [
-  {
-    title: "Módulo diagnóstico",
-    description:
-      "Descripción: el diagnóstico realizado por un médico veterinario es una de las herramientas clave para detectar, controlar y prevenir enfermedades que puedan afectar la producción, el bienestar animal y el cumplimiento normativo.",
-  },
+  // {
+  //   title: "Módulo diagnóstico",
+  //   description:
+  //     "Descripción: el diagnóstico realizado por un médico veterinario es una de las herramientas clave para detectar, controlar y prevenir enfermedades que puedan afectar la producción, el bienestar animal y el cumplimiento normativo.",
+  // },
   {
     title: "Módulo análisis de laboratorio",
     description:
@@ -842,7 +844,7 @@ function BottomNav({
   const items: Array<{ key: TabKey; label: string; icon: React.ElementType }> = [
     { key: "inicio", label: "Inicio", icon: Home },
     { key: "visitas", label: "Visitas", icon: CalendarDays },
-    { key: "registro", label: "Visita actual", icon: ClipboardPenLine },
+    { key: "registro", label: "Diagnóstico", icon: ClipboardPenLine },
     { key: "necropsias", label: "Necropsias", icon: Stethoscope },
     { key: "resumen", label: "Resumen", icon: FileText },
     { key: "muestreo", label: "Muestreos", icon: FlaskConical },
@@ -1171,6 +1173,7 @@ export default function App() {
       const savedHistoryFilters = localStorage.getItem(STORAGE_KEYS.historyFilters);
       const savedSamplingFlow = localStorage.getItem(STORAGE_KEYS.samplingFlow);
       const savedNecropsyState = localStorage.getItem(STORAGE_KEYS.necropsyState);
+      const savedDiagnosisModuleState = localStorage.getItem(STORAGE_KEYS.diagnosisModuleState);
 
       const parsedVisits: Visit[] = savedVisits
         ? JSON.parse(savedVisits).map((visit: Partial<Visit>) => normalizeVisit(visit))
@@ -1231,6 +1234,12 @@ export default function App() {
         setNecropsyObservations(parsed.necropsyObservations ?? "");
         setSelectedNecropsyPrimary(parsed.selectedNecropsyPrimary ?? ["Otras"]);
         setSelectedNecropsySecondary(parsed.selectedNecropsySecondary ?? ["SRS", "PGD"]);
+      }
+
+      if (savedDiagnosisModuleState) {
+        const parsed = JSON.parse(savedDiagnosisModuleState);
+        setSelectedDiagnosis(parsed.selectedDiagnosis ?? ["PGD"]);
+        setSelectedActions(parsed.selectedActions ?? ["Tomar muestras"]);
       }
     } catch {
       setVisits(visitsSeed);
@@ -1297,6 +1306,17 @@ export default function App() {
     checklist,
     ready,
   ]);
+
+  useEffect(() => {
+    if (!ready) return;
+    localStorage.setItem(
+      STORAGE_KEYS.diagnosisModuleState,
+      JSON.stringify({
+        selectedDiagnosis,
+        selectedActions,
+      })
+    );
+  }, [selectedDiagnosis, selectedActions, ready]);
 
   useEffect(() => {
     if (!ready) return;
@@ -1481,6 +1501,16 @@ export default function App() {
           ? `Asociado a visita ${linkedSamplingVisit.id} · ${linkedSamplingVisit.centro} · ${linkedSamplingVisit.modulo} · ${linkedSamplingVisit.jaula}`
           : "Muestreo abierto desde menú principal",
       diagnostico: selectedDiagnosis.join(", ") || "Sin selección",
+      diagnosticoModulo: "Módulo de diagnóstico",
+      diagnosticoEstado:
+        selectedActions.includes("Despachar a laboratorio") || selectedActions.includes("Tomar muestras")
+          ? "Pendiente laboratorio"
+          : selectedActions.includes("Aplicar tratamiento")
+          ? "Presuntivo"
+          : selectedDiagnosis.length > 0
+          ? "En evaluación"
+          : "Sin definir",
+      diagnosticoFuente: necropsyNote ? "Clínico + macroscópico" : inspectionNote ? "Clínico" : "Sin evidencia",
       acciones: selectedActions.join(", ") || "Sin selección",
       principalCausa: dominantCause,
       destinatario: recipient,
@@ -1825,7 +1855,7 @@ export default function App() {
                 className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-white font-semibold text-[#0F6CBD]"
               >
                 <ClipboardCheck className="h-5 w-5" />
-                Iniciar siguiente visita
+                Iniciar diagnóstico de siguiente visita
               </button>
             </section>
 
@@ -2059,6 +2089,7 @@ export default function App() {
                 </div>
               </div>
             </section>
+
             <AccordionSection
               title="Antecedentes productivos"
               subtitle="N° peces, peso promedio, biomasa y mortalidad"
@@ -2108,6 +2139,29 @@ export default function App() {
                 />
               </div>
             </AccordionSection>
+
+            <DiagnosisModule
+              selectedVisit={selectedVisit}
+              selectedModulo={selectedModulo}
+              selectedJaula={selectedJaula}
+              inspectionNote={inspectionNote}
+              necropsyNote={necropsyNote}
+              mortalityNote={mortalityNote}
+              treatmentNote={treatmentNote}
+              samplingNote={samplingNote}
+              selectedDiagnosis={selectedDiagnosis}
+              selectedActions={selectedActions}
+              setSelectedDiagnosis={setSelectedDiagnosis}
+              setSelectedActions={setSelectedActions}
+              diagnosisOptions={diagnosisOptions}
+              actionOptions={actionOptions}
+              toggleInArray={toggleInArray}
+              act={act}
+              AccordionSection={AccordionSection}
+              ActionChip={ActionChip}
+            />
+
+           
 
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
               <SectionHeader title="Contexto clínico" subtitle="Resumen" />
