@@ -3,15 +3,11 @@
 import React from "react";
 import {
   Activity,
-  AlertTriangle,
-  CheckCircle2,
   ClipboardList,
   FlaskConical,
   Microscope,
   ShieldCheck,
   Stethoscope,
-  TestTubeDiagonal,
-  Waves,
 } from "lucide-react";
 
 type Visit = {
@@ -111,269 +107,186 @@ function ToneCard({
   );
 }
 
-function MiniKpi({
-  label,
-  value,
+function SelectionGroup({
+  title,
+  options,
+  selected,
+  onToggle,
+  Chip,
 }: {
-  label: string;
-  value: string;
+  title: string;
+  options: string[];
+  selected: string[];
+  onToggle: (value: string) => void;
+  Chip: React.ComponentType<ActionChipProps>;
 }) {
   return (
-    <div className="rounded-2xl border border-white/70 bg-white/80 p-3">
-      <p className="text-[11px] uppercase tracking-[0.12em] text-slate-500">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-slate-900">{value}</p>
+    <div className="space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{title}</p>
+      <div className="grid grid-cols-2 gap-2">
+        {options.map((item) => (
+          <Chip
+            key={item}
+            label={item}
+            active={selected.includes(item)}
+            onClick={() => onToggle(item)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
 export default function DiagnosisModule({
-  selectedVisit,
-  selectedModulo,
-  selectedJaula,
-  inspectionNote,
-  necropsyNote,
-  mortalityNote,
-  treatmentNote,
-  samplingNote,
   selectedDiagnosis,
   selectedActions,
   setSelectedDiagnosis,
   setSelectedActions,
-  diagnosisOptions,
-  actionOptions,
   toggleInArray,
-  act,
   AccordionSection,
   ActionChip,
 }: DiagnosisModuleProps) {
-  const suggestedStatus =
-    selectedActions.includes("Despachar a laboratorio") || selectedActions.includes("Tomar muestras")
-      ? "Pendiente laboratorio"
-      : selectedActions.includes("Aplicar tratamiento")
-      ? "Presuntivo"
-      : selectedDiagnosis.length > 0
-      ? "En evaluación"
-      : "Sin definir";
+  const diagnosticMethodOptions = [
+    "Diagnóstico clínico",
+    "Diagnóstico macroscópico",
+    "Diagnóstico de laboratorio",
+    "Diagnóstico epidemiológico o de tendencias",
+  ];
 
-  const likelySource = necropsyNote.trim()
-    ? "Clínico + macroscópico"
-    : inspectionNote.trim()
-    ? "Clínico"
-    : "Sin evidencia cargada";
+  const laboratorySubtypeOptions = [
+    "Microbiológico",
+    "Parasitológico",
+    "Virológico",
+    "Histopatológico",
+    "Molecular y genético",
+  ];
+
+  const clinicalOrientationOptions = ["SRS", "IPN", "BKD", "ISA", "Otro"];
+  const diagnosticStatusOptions = ["Diagnóstico presuntivo", "Diagnóstico confirmado"];
+
+  const orderedActionOptions = [
+    "Tomar muestras",
+    "Despachar a laboratorio",
+    "Aplicar tratamiento",
+    "Emitir receta",
+    "Reforzar monitoreo",
+    "Revisar en 48 h",
+  ];
 
   return (
     <div className="space-y-4">
-      <section className="rounded-[28px] bg-gradient-to-br from-violet-700 to-indigo-800 p-5 text-white shadow-xl">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Diagnóstico de la Visita</p>
-            <h2 className="mt-2 text-xl font-semibold">Diagnóstico sanitario</h2>
-            <p className="mt-2 text-sm text-white/80">
-              Consolida evidencia clínica, necropsia, mortalidad, muestreo y plan de acción.
-            </p>
-          </div>
-          <Microscope className="mt-1 h-8 w-8 text-white" />
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <MiniKpi label="Centro" value={selectedVisit.centro} />
-          <MiniKpi label="Ubicación" value={`${selectedModulo} · ${selectedJaula}`} />
-          <MiniKpi label="Estado" value={suggestedStatus} />
-          <MiniKpi label="Fuente" value={likelySource} />
-        </div>
-      </section>
-
-      {/* <ToneCard
-        title="Resumen diagnóstico"
-        subtitle="Panel rápido para orientar la toma de decisiones dentro de la visita"
-        icon={ClipboardList}
-        tone="violet"
-      >
-        <div className="grid grid-cols-2 gap-3">
-          <MiniKpi label="Mortalidad" value={`${selectedVisit.mortalidad}%`} />
-          <MiniKpi label="Temperatura" value={`${selectedVisit.temperatura} °C`} />
-          <MiniKpi label="Oxígeno" value={`${selectedVisit.oxigeno} mg/L`} />
-          <MiniKpi label="Diagnósticos" value={selectedDiagnosis.join(", ") || "Sin selección"} />
-        </div>
-      </ToneCard> */}
-
       <AccordionSection
-        title="Diagnóstico clínico"
-        subtitle="Observación de signos, comportamiento, parámetros ambientales y mortalidad"
+        title="Selección diagnóstica"
+        subtitle="Solo opciones de selección múltiple para exportar al informe"
         defaultOpen
-      >
-        <div className="grid grid-cols-1 gap-3">
-          <ToneCard
-            title="Evidencia clínica cargada"
-            subtitle="Se alimenta desde inspección visual, mortalidad y variables ambientales"
-            icon={Stethoscope}
-            tone="blue"
-          >
-            <div className="space-y-3 text-sm text-slate-700">
-              <div className="rounded-2xl bg-white p-3">
-                <p className="font-semibold text-slate-900">Inspección visual</p>
-                <p className="mt-1">{inspectionNote || "Sin registro"}</p>
-              </div>
-              <div className="rounded-2xl bg-white p-3">
-                <p className="font-semibold text-slate-900">Mortalidad / tendencias</p>
-                <p className="mt-1">{mortalityNote || "Sin registro"}</p>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <MiniKpi label="Nado / conducta" value={inspectionNote ? "Registrado" : "Pendiente"} />
-                <MiniKpi label="Temperatura" value={`${selectedVisit.temperatura} °C`} />
-                <MiniKpi label="Oxígeno" value={`${selectedVisit.oxigeno} mg/L`} />
-              </div>
-            </div>
-          </ToneCard>
-        </div>
-      </AccordionSection>
-
-      <AccordionSection
-        title="Diagnóstico macroscópico"
-        subtitle="Integra necropsia de terreno y hallazgos visibles de órganos y tejidos"
-      >
-        <ToneCard
-          title="Hallazgo macroscópico"
-          subtitle="Complementa el diagnóstico clínico previo"
-          icon={TestTubeDiagonal}
-          tone="amber"
-        >
-          <div className="space-y-3 text-sm text-slate-700">
-            <div className="rounded-2xl bg-white p-3">
-              <p className="font-semibold text-slate-900">Necropsia</p>
-              <p className="mt-1">{necropsyNote || "Sin registro"}</p>
-            </div>
-            <button
-              onClick={() => act("Se revisó evidencia macroscópica desde módulo diagnóstico")}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-              Marcar revisión macroscópica
-            </button>
-          </div>
-        </ToneCard>
-      </AccordionSection>
-
-      <AccordionSection
-        title="Diagnóstico de laboratorio y muestreo"
-        subtitle="Usa el contexto de muestras para sostener o confirmar la hipótesis"
-      >
-        <ToneCard
-          title="Apoyo diagnóstico"
-          subtitle="Permite orientar confirmación oficial del agente"
-          icon={FlaskConical}
-          tone="emerald"
-        >
-          <div className="space-y-3 text-sm text-slate-700">
-            <div className="rounded-2xl bg-white p-3">
-              <p className="font-semibold text-slate-900">Muestreo asociado</p>
-              <p className="mt-1">{samplingNote || "Sin muestreo descrito"}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {["Microbiológico", "Parasitológico", "Virológico", "Histopatológico"].map((item) => (
-                <button
-                  key={item}
-                  onClick={() => act(`Solicitud de análisis ${item} simulada`)}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-medium text-slate-700"
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
-        </ToneCard>
-      </AccordionSection>
-
-      <AccordionSection
-        title="Diagnóstico presuntivo y confirmado"
-        subtitle="Hipótesis actual, selección múltiple y estado operativo"
       >
         <div className="space-y-3">
           <ToneCard
-            title="Hipótesis diagnóstica"
-            subtitle="Puedes mantener selección múltiple y usarla en el reporte integrado"
-            icon={Activity}
-            tone="rose"
+            title="Método diagnóstico"
+            subtitle="Clasificación del diagnóstico según el enfoque utilizado"
+            icon={ClipboardList}
+            tone="blue"
           >
-            <div className="grid grid-cols-2 gap-2">
-              {diagnosisOptions.map((item) => (
-                <ActionChip
-                  key={item}
-                  label={item}
-                  active={selectedDiagnosis.includes(item)}
-                  onClick={() => toggleInArray(item, setSelectedDiagnosis)}
-                />
-              ))}
-            </div>
+            <SelectionGroup
+              title="Clasificación"
+              options={diagnosticMethodOptions}
+              selected={selectedDiagnosis}
+              onToggle={(value) => toggleInArray(value, setSelectedDiagnosis)}
+              Chip={ActionChip}
+            />
           </ToneCard>
 
           <ToneCard
-            title="Estado sugerido"
-            subtitle="No reemplaza tus estados actuales; agrega una lectura diagnóstica separada"
+            title="Diagnóstico clínico y macroscópico"
+            subtitle="Selección de sospechas o hallazgos orientativos para el informe"
+            icon={Stethoscope}
+            tone="amber"
+          >
+            <SelectionGroup
+              title="Sospecha / orientación clínica"
+              options={clinicalOrientationOptions}
+              selected={selectedDiagnosis}
+              onToggle={(value) => toggleInArray(value, setSelectedDiagnosis)}
+              Chip={ActionChip}
+            />
+          </ToneCard>
+
+          <ToneCard
+            title="Diagnóstico de laboratorio"
+            subtitle="Subtipos diagnósticos asociados a confirmación por laboratorio"
+            icon={FlaskConical}
+            tone="emerald"
+          >
+            <SelectionGroup
+              title="Subtipo de laboratorio"
+              options={laboratorySubtypeOptions}
+              selected={selectedDiagnosis}
+              onToggle={(value) => toggleInArray(value, setSelectedDiagnosis)}
+              Chip={ActionChip}
+            />
+          </ToneCard>
+
+          <ToneCard
+            title="Estado del diagnóstico"
+            subtitle="Marca si el diagnóstico corresponde a una hipótesis o a una confirmación"
             icon={ShieldCheck}
             tone="violet"
           >
-            <div className="rounded-2xl bg-white p-4 text-sm text-slate-700">
-              <p>
-                <span className="font-semibold text-slate-900">Estado:</span> {suggestedStatus}
-              </p>
-              <p className="mt-2">
-                <span className="font-semibold text-slate-900">Hipótesis vigente:</span>{" "}
-                {selectedDiagnosis.join(", ") || "Sin selección"}
-              </p>
-              <p className="mt-2">
-                <span className="font-semibold text-slate-900">Tratamiento / conducta:</span>{" "}
-                {treatmentNote || "Sin observaciones"}
-              </p>
-            </div>
+            <SelectionGroup
+              title="Estado"
+              options={diagnosticStatusOptions}
+              selected={selectedDiagnosis}
+              onToggle={(value) => toggleInArray(value, setSelectedDiagnosis)}
+              Chip={ActionChip}
+            />
           </ToneCard>
         </div>
       </AccordionSection>
 
       <AccordionSection
-        title="Acciones sugeridas"
-        subtitle="Mantiene las mismas acciones del flujo actual, pero desde el módulo aparte"
+        title="Acciones asociadas"
+        subtitle="Conductas seleccionables para exportar junto al diagnóstico"
       >
-        <div className="grid grid-cols-2 gap-2">
-          {actionOptions.map((item) => (
-            <ActionChip
-              key={item}
-              label={item}
-              active={selectedActions.includes(item)}
-              onClick={() => toggleInArray(item, setSelectedActions)}
-            />
-          ))}
-        </div>
+        <ToneCard
+          title="Plan de acción"
+          subtitle="Mantiene la lógica de exportación y el estado sugerido del flujo principal"
+          icon={Activity}
+          tone="rose"
+        >
+          <div className="grid grid-cols-2 gap-2">
+            {orderedActionOptions.map((item) => (
+              <ActionChip
+                key={item}
+                label={item}
+                active={selectedActions.includes(item)}
+                onClick={() => toggleInArray(item, setSelectedActions)}
+              />
+            ))}
+          </div>
+        </ToneCard>
       </AccordionSection>
 
       <AccordionSection
-        title="Bienestar animal y alertas"
-        subtitle="Lectura rápida de factores no patológicos con impacto sanitario"
+        title="Selección exportable"
+        subtitle="Vista compacta de lo actualmente marcado"
       >
         <ToneCard
-          title="Bienestar animal"
-          subtitle="Parámetros ambientales y gatillos operativos"
-          icon={Waves}
+          title="Resumen de selección"
+          subtitle="Sin duplicar evidencia clínica ni datos ya presentes en otros módulos"
+          icon={Microscope}
           tone="blue"
         >
-          <div className="grid grid-cols-2 gap-3">
-            <MiniKpi label="Oxígeno" value={`${selectedVisit.oxigeno} mg/L`} />
-            <MiniKpi label="Temperatura" value={`${selectedVisit.temperatura} °C`} />
-            <MiniKpi label="Estado sanitario" value={selectedVisit.estadoSanitario} />
-            <MiniKpi label="Prioridad" value={selectedVisit.prioridad} />
-          </div>
-
-          {(selectedVisit.oxigeno < 8 || selectedVisit.mortalidad > 2) && (
-            <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <p>
-                  Se detecta una señal que amerita seguimiento: oxígeno bajo o mortalidad elevada para el contexto de la
-                  visita.
-                </p>
-              </div>
+          <div className="space-y-3 text-sm text-slate-700">
+            <div className="rounded-2xl bg-white p-3">
+              <p className="font-semibold text-slate-900">Diagnóstico</p>
+              <p className="mt-1">{selectedDiagnosis.join(", ") || "Sin selección"}</p>
             </div>
-          )}
+
+            <div className="rounded-2xl bg-white p-3">
+              <p className="font-semibold text-slate-900">Acciones</p>
+              <p className="mt-1">{selectedActions.join(", ") || "Sin selección"}</p>
+            </div>
+          </div>
         </ToneCard>
       </AccordionSection>
     </div>
