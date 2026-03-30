@@ -38,6 +38,9 @@ import {
   Atom,
   PackageOpen,
   ClipboardList,
+  Mail,
+  Lock,
+  ShieldCheck,
 } from "lucide-react";
 import DiagnosisModule from "./components/DiagnosisModule";
 
@@ -1915,6 +1918,135 @@ function createVisitFromForm(form: VisitForm, existingId?: string, currentState?
   };
 }
 
+
+
+function CorporateLogin({
+  email,
+  password,
+  onSuccess,
+}: {
+  email: string;
+  password: string;
+  onSuccess: () => void;
+}) {
+  const [username, setUsername] = useState("");
+  const [pass, setPass] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [logoError, setLogoError] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (username === email && pass === password) {
+      setError("");
+      onSuccess();
+      return;
+    }
+
+    setError("Credenciales inválidas. Verifica tu correo corporativo y contraseña.");
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-sky-50 px-4 py-8 text-slate-900">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md items-center">
+        <div className="w-full overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-2xl">
+          <div className="bg-gradient-to-r from-[#0F6CBD] to-[#115EA3] px-6 py-8 text-white">
+            <div className="mb-5 flex items-center justify-between">
+              <div className="rounded-2xl bg-white/15 p-3 backdrop-blur">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
+              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
+                Acceso corporativo
+              </span>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm">
+                {!logoError ? (
+                  <img
+                    src="/imagen.png"
+                    alt="Logo empresa"
+                    className="h-full w-full object-contain"
+                    onError={() => setLogoError(true)}
+                  />
+                ) : (
+                  <Fish className="h-8 w-8 text-[#0F6CBD]" />
+                )}
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-white/70">AquaChile</p>
+                <h1 className="mt-1 text-2xl font-semibold">Sistema Veterinario</h1>
+                <p className="mt-1 text-sm text-white/80">Inicio de sesión interno</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-6">
+            {/* <div className="mb-5 rounded-2xl border border-sky-100 bg-sky-50 p-4 text-sm text-sky-800">
+              <p className="font-semibold">Credenciales de demostración</p>
+              <p className="mt-1">Usuario: {email}</p>
+              <p>Contraseña: {password}</p>
+            </div> */}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Correo corporativo</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="email"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="aquachile@ejemplo.cl"
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm outline-none transition focus:border-[#0F6CBD]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Contraseña</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={pass}
+                    onChange={(e) => setPass(e.target.value)}
+                    placeholder="Ingresa tu contraseña"
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-24 text-sm outline-none transition focus:border-[#0F6CBD]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                  >
+                    {showPassword ? "Ocultar" : "Mostrar"}
+                  </button>
+                </div>
+              </div>
+
+              {error ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  {error}
+                </div>
+              ) : null}
+
+              <button
+                type="submit"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] font-semibold text-white transition hover:bg-[#115EA3]"
+              >
+                <ShieldCheck className="h-5 w-5" />
+                Ingresar
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function matchesVisit(visit: Visit, query: string) {
   const text = query.toLowerCase().trim();
   if (!text) return true;
@@ -1940,7 +2072,11 @@ function matchesVisit(visit: Visit, query: string) {
 }
 
 export default function App() {
+  const DEMO_USER = "aquachile@ejemplo.cl";
+  const DEMO_PASSWORD = "P@ssword123";
+
   const [ready, setReady] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [tab, setTab] = useState<TabKey>("inicio");
   const [offline, setOffline] = useState(true);
   const [visits, setVisits] = useState<Visit[]>(visitsSeed);
@@ -2919,6 +3055,19 @@ export default function App() {
     return <div className="min-h-screen bg-[#F5F7FA]" />;
   }
 
+  if (!isAuthenticated) {
+    return (
+      <CorporateLogin
+        email={DEMO_USER}
+        password={DEMO_PASSWORD}
+        onSuccess={() => {
+          setIsAuthenticated(true);
+          setToast("Sesión corporativa iniciada");
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F5F7FA] text-slate-900">
       <TopBar
@@ -2969,7 +3118,7 @@ export default function App() {
 
             <AccordionSection
               title="Módulos del sistema"
-              subtitle="Los módulos se abren desde inicio. Muestreo y necropsias también pueden abrirse desde una visita activa."
+              // subtitle="Los módulos se abren desde inicio. Muestreo y necropsias también pueden abrirse desde una visita activa."
               defaultOpen
             >
               <div className="grid grid-cols-2 gap-3">
@@ -3011,7 +3160,7 @@ export default function App() {
                   </div>
                   <p className="mt-3 text-sm font-semibold text-slate-900">Módulo necropsias</p>
                   <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Pontón de ensilaje → mortalidades → clasificación → impresión.
+                    Registro de necropsias con clasificación.
                   </p>
                 </button>
 
@@ -3255,26 +3404,7 @@ export default function App() {
               onJaulaChange={setSelectedJaula}
             />
 
-            <DiagnosisModule
-              selectedVisit={selectedVisit}
-              selectedModulo={selectedModulo}
-              selectedJaula={selectedJaula}
-              inspectionNote={inspectionNote}
-              necropsyNote={necropsyNote}
-              mortalityNote={mortalityNote}
-              treatmentNote={treatmentNote}
-              samplingNote={samplingNote}
-              selectedDiagnosis={selectedDiagnosis}
-              selectedActions={selectedActions}
-              setSelectedDiagnosis={setSelectedDiagnosis}
-              setSelectedActions={setSelectedActions}
-              diagnosisOptions={diagnosisOptions}
-              actionOptions={actionOptions}
-              toggleInArray={toggleInArray}
-              act={act}
-              AccordionSection={AccordionSection}
-              ActionChip={ActionChip}
-            />
+
 
 
 
@@ -3327,6 +3457,27 @@ export default function App() {
                 </button>
               </div>
             </AccordionSection>
+
+            <DiagnosisModule
+              selectedVisit={selectedVisit}
+              selectedModulo={selectedModulo}
+              selectedJaula={selectedJaula}
+              inspectionNote={inspectionNote}
+              necropsyNote={necropsyNote}
+              mortalityNote={mortalityNote}
+              treatmentNote={treatmentNote}
+              samplingNote={samplingNote}
+              selectedDiagnosis={selectedDiagnosis}
+              selectedActions={selectedActions}
+              setSelectedDiagnosis={setSelectedDiagnosis}
+              setSelectedActions={setSelectedActions}
+              diagnosisOptions={diagnosisOptions}
+              actionOptions={actionOptions}
+              toggleInArray={toggleInArray}
+              act={act}
+              AccordionSection={AccordionSection}
+              ActionChip={ActionChip}
+            />
 
             {/* <AccordionSection title="Necropsia" subtitle="Hallazgo resumido">
               <textarea
