@@ -12,9 +12,6 @@ import {
   ChevronRight,
   MapPin,
   ChartNoAxesCombined,
-  Plus,
-  Send,
-  Download,
   ClipboardCheck,
   X,
   Trash2,
@@ -40,6 +37,9 @@ import {
   ClipboardList,
 } from "lucide-react";
 import DiagnosisModule from "./components/DiagnosisModule";
+import InicioModule from "./components/modules/InicioModule";
+import ResumenModule from "./components/modules/ResumenModule";
+import VisitasModule from "./components/modules/VisitasModule";
 
 import {
   actionOptions,
@@ -1219,202 +1219,42 @@ export default function App() {
 
       <main className="mx-auto max-w-md px-4 pb-28 pt-4">
         {tab === "inicio" && (
-          <div className="space-y-4">
-            <section className="overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0F6CBD] to-[#115EA3] p-5 text-white shadow-xl">
-              {/* <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Flujo de terreno</p> */}
-              {/* <h2 className="mt-2 text-2xl font-semibold leading-tight">
-                Centro → módulo → jaula → historial → registro → pontón de ensilaje → mortalidades → necropsias → reporte
-              </h2> */}
-
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
-                  <p className="text-sm text-white/70">Pendientes</p>
-                  <p className="mt-2 text-3xl font-semibold">{stats.pendientes}</p>
-                </div>
-                <div className="rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
-                  <p className="text-sm text-white/70">En curso</p>
-                  <p className="mt-2 text-3xl font-semibold">{stats.enCurso}</p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => openVisit(visits[0])}
-                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-white font-semibold text-[#0F6CBD]"
-              >
-                <ClipboardCheck className="h-5 w-5" />
-                Iniciar diagnóstico de siguiente visita
-              </button>
-            </section>
-
-            <SearchBox value={search} onChange={setSearch} onClear={() => setSearch("")} />
-
-            <section className="grid grid-cols-2 gap-3">
-              <MetricCard label="Completadas" value={stats.completadas} icon={CheckCircle2} tone="emerald" />
-              <MetricCard label="Sin señal" value={offline ? "Activo" : "No"} icon={WifiOff} tone="slate" />
-            </section>
-
-            <AccordionSection
-              title="Módulos del sistema"
-              subtitle="Los módulos se abren desde inicio. Muestreo y necropsias también pueden abrirse desde una visita activa."
-              defaultOpen
-            >
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setTab("registro")}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-[#0F6CBD] hover:bg-[#E8F3FC]"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F3FC] text-[#0F6CBD]">
-                    <ClipboardPenLine className="h-5 w-5" />
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-900">Módulo visita</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Registro clínico y sanitario de la visita activa.
-                  </p>
-                </button>
-
-                <button
-                  onClick={openStandaloneSampling}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-emerald-600 hover:bg-emerald-50"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                    <FlaskConical className="h-5 w-5" />
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-900">Módulo muestreo</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Toma de muestras independiente o vinculada a visita.
-                  </p>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setTab("necropsias");
-                    hydrateNecropsyEditor(selectedNecropsy);
-                  }}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-rose-600 hover:bg-rose-50"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-700">
-                    <Stethoscope className="h-5 w-5" />
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-900">Módulo necropsias</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Pontón de ensilaje → mortalidades → clasificación → impresión.
-                  </p>
-                </button>
-
-                {/* <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
-                    <PackageOpen className="h-5 w-5" />
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-900">Bitácora pontón</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Respaldo documental conectado al módulo de necropsias.
-                  </p>
-                </div> */}
-              </div>
-
-              <div className="mt-3 space-y-3">
-                {placeholderModules.map((module) => (
-                  <div key={module.title} className="rounded-2xl bg-slate-50 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">{module.title}</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-600">{module.description}</p>
-                      </div>
-                      <p className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500">
-                        Próximamente
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </AccordionSection>
-
-            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <SectionHeader title="Alertas de hoy" subtitle="Prioridad clínica" />
-              <div className="space-y-3">
-                {alertsSeed.map((alert) => (
-                  <button
-                    key={alert.titulo}
-                    onClick={() => act(`${alert.titulo}: ${alert.descripcion}`)}
-                    className="block w-full rounded-2xl bg-slate-50 p-4 text-left"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">{alert.titulo}</p>
-                        <p className="mt-1 text-sm text-slate-500">{alert.descripcion}</p>
-                      </div>
-                      <StatusBadge value={alert.severidad} />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </section>
-
-
-          </div>
+          <InicioModule
+            stats={stats}
+            openVisit={openVisit}
+            visits={visits}
+            SearchBox={SearchBox}
+            search={search}
+            setSearch={setSearch}
+            MetricCard={MetricCard}
+            offline={offline}
+            AccordionSection={AccordionSection}
+            setTab={setTab}
+            openStandaloneSampling={openStandaloneSampling}
+            hydrateNecropsyEditor={hydrateNecropsyEditor}
+            selectedNecropsy={selectedNecropsy}
+            placeholderModules={placeholderModules}
+            alertsSeed={alertsSeed}
+            act={act}
+            StatusBadge={StatusBadge}
+          />
         )}
 
         {tab === "visitas" && (
-          <div className="space-y-4">
-            <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900">Visitas</h2>
-                  <p className="mt-1 text-sm text-slate-500">Agenda simple con centro, módulo, jaula y estado.</p>
-                </div>
-                <button
-                  onClick={openCreateModal}
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#0F6CBD] text-white"
-                >
-                  <Plus className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {(["Todas", "Hoy", "Pendientes", "En progreso", "Completadas"] as FilterKey[]).map((item) => (
-                  <button
-                    key={item}
-                    onClick={() => setFilter(item)}
-                    className={cn(
-                      "h-10 rounded-2xl border px-3 text-sm font-medium",
-                      filter === item
-                        ? "border-[#0F6CBD] bg-[#E8F3FC] text-[#0F6CBD]"
-                        : "border-slate-200 bg-white text-slate-700"
-                    )}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <SearchBox value={search} onChange={setSearch} onClear={() => setSearch("")} />
-
-            <div className="space-y-3">
-              {filteredVisits.length ? (
-                filteredVisits.map((visit) => (
-                  <VisitCard
-                    key={visit.id}
-                    visit={visit}
-                    onOpen={openVisit}
-                    onEdit={openEditModal}
-                    onDelete={deleteVisit}
-                  />
-                ))
-              ) : (
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-6 text-center shadow-sm">
-                  <p className="text-sm font-medium text-slate-800">No hay visitas para este filtro</p>
-                  <button
-                    onClick={openCreateModal}
-                    className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] px-4 text-sm font-semibold text-white"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Crear visita
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+          <VisitasModule
+            openCreateModal={openCreateModal}
+            filter={filter}
+            setFilter={setFilter}
+            cn={cn}
+            SearchBox={SearchBox}
+            search={search}
+            setSearch={setSearch}
+            filteredVisits={filteredVisits}
+            VisitCard={VisitCard}
+            openVisit={openVisit}
+            openEditModal={openEditModal}
+            deleteVisit={deleteVisit}
+          />
         )}
 
         {tab === "registro" && (
@@ -2186,80 +2026,17 @@ export default function App() {
         )}
 
         {tab === "resumen" && (
-          <div className="space-y-4">
-            <section className="rounded-[28px] bg-gradient-to-br from-slate-900 to-slate-700 p-5 text-white shadow-xl">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Resumen integrado</p>
-              <h2 className="mt-2 text-xl font-semibold">{selectedVisit.id}</h2>
-              <p className="mt-2 text-sm text-white/80">
-                {selectedVisit.centro} · {selectedModulo} · {selectedJaula}
-              </p>
-            </section>
-
-            <AccordionSection title="Ficha sanitaria" subtitle="Visita + muestreo + necropsia" defaultOpen>
-              <div className="space-y-3 text-sm text-slate-700">
-                <div className="rounded-2xl bg-slate-50 p-3">
-                  <p className="font-semibold text-slate-900">Visita</p>
-                  <p className="mt-1">{generatedReport.tipoVisita}</p>
-                  <p className="mt-1">{generatedReport.objetivoVisita}</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-3">
-                  <p className="font-semibold text-slate-900">Muestreo</p>
-                  <p className="mt-1">{generatedReport.categoriaMuestreo}</p>
-                  <p className="mt-1">{generatedReport.tipoMuestra}</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-3">
-                  <p className="font-semibold text-slate-900">Necropsia</p>
-                  <p className="mt-1">{generatedReport.necropsiaIntegrada.diagnosticoPresuntivo}</p>
-                  <p className="mt-1">
-                    {generatedReport.necropsiaIntegrada.clasificacionPrimaria} /{" "}
-                    {generatedReport.necropsiaIntegrada.clasificacionSecundaria}
-                  </p>
-                </div>
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="Mortalidad y causas" subtitle="Distribución del contexto">
-              <div className="space-y-2">
-                {aggregatedByCause.map((item) => (
-                  <div key={item.causa} className="flex items-center justify-between rounded-2xl bg-slate-50 p-3">
-                    <p className="text-sm font-medium text-slate-800">{item.causa}</p>
-                    <p className="text-sm font-semibold text-slate-900">{item.total}</p>
-                  </div>
-                ))}
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="Destino del reporte" subtitle="Impresión / envío">
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-sm text-slate-700">
-                  <span className="font-semibold">Destinatario:</span> {recipient.nombre}
-                </p>
-                <p className="mt-1 text-sm text-slate-700">
-                  <span className="font-semibold">Cargo:</span> {recipient.cargo}
-                </p>
-                <p className="mt-1 text-sm text-slate-700">
-                  <span className="font-semibold">Canal:</span> {recipient.canal}
-                </p>
-              </div>
-            </AccordionSection>
-
-            <section className="grid grid-cols-2 gap-3">
-              <button
-                onClick={exportSummary}
-                className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
-              >
-                <Download className="h-4 w-4" />
-                Exportar
-              </button>
-              <button
-                onClick={sendToTeams}
-                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] text-sm font-semibold text-white"
-              >
-                <Send className="h-4 w-4" />
-                Marcar envío
-              </button>
-            </section>
-          </div>
+          <ResumenModule
+            selectedVisit={selectedVisit}
+            selectedModulo={selectedModulo}
+            selectedJaula={selectedJaula}
+            AccordionSection={AccordionSection}
+            generatedReport={generatedReport}
+            aggregatedByCause={aggregatedByCause}
+            recipient={recipient}
+            exportSummary={exportSummary}
+            sendToTeams={sendToTeams}
+          />
         )}
       </main>
 
