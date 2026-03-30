@@ -11,7 +11,7 @@ import {
   Search,
   ChevronRight,
   MapPin,
-  Activity,
+  ChartNoAxesCombined,
   Plus,
   Send,
   Download,
@@ -22,8 +22,8 @@ import {
   RotateCcw,
   Eye,
   Printer,
-  Layers3,
-  Grid3X3,
+  Fish,
+  XLineTop,
   Mic,
   Camera,
   FlaskConical,
@@ -36,7 +36,6 @@ import {
   WifiOff,
   Thermometer,
   Atom,
-  Skull,
   PackageOpen,
   ClipboardList,
 } from "lucide-react";
@@ -292,7 +291,7 @@ const visitFrequencyOptions = [
   "A solicitud",
 ];
 
-const visitActivityOptions = [
+const visitChartNoAxesCombinedOptions = [
   "Toma de muestras",
   "Chequeo clínico",
   "Registros de mortalidad",
@@ -432,7 +431,7 @@ const defaultForm: VisitForm = {
 const defaultChecklist: ChecklistItem[] = [
   { label: "Inspección visual", done: true, icon: Eye },
   { label: "Necropsia", done: false, icon: Stethoscope },
-  { label: "Mortalidad", done: false, icon: Activity },
+  { label: "Mortalidad", done: false, icon: ChartNoAxesCombined },
   { label: "Muestreo", done: false, icon: FlaskConical },
   { label: "Tratamiento / receta", done: false, icon: Pill },
 ];
@@ -843,13 +842,15 @@ function BottomNav({
   const items: Array<{ key: TabKey; label: string; icon: React.ElementType }> = [
     { key: "inicio", label: "Inicio", icon: Home },
     { key: "visitas", label: "Visitas", icon: CalendarDays },
-    { key: "necropsias", label: "Necropsias", icon: Skull },
+    { key: "registro", label: "Visita actual", icon: ClipboardPenLine },
+    { key: "necropsias", label: "Necropsias", icon: Stethoscope },
     { key: "resumen", label: "Resumen", icon: FileText },
+    { key: "muestreo", label: "Muestreos", icon: FlaskConical },
   ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto grid max-w-md grid-cols-4 px-2 py-2">
+      <div className="mx-auto grid max-w-md grid-cols-6 px-2 py-2">
         {items.map((item) => {
           const active = tab === item.key;
           const Icon = item.icon;
@@ -1875,7 +1876,7 @@ export default function App() {
                   className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-rose-600 hover:bg-rose-50"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-700">
-                    <Skull className="h-5 w-5" />
+                    <Stethoscope className="h-5 w-5" />
                   </div>
                   <p className="mt-3 text-sm font-semibold text-slate-900">Módulo necropsias</p>
                   <p className="mt-1 text-xs leading-5 text-slate-500">
@@ -1932,55 +1933,7 @@ export default function App() {
               </div>
             </section>
 
-            <AccordionSection
-              title="Antecedentes productivos"
-              subtitle="N° peces, peso promedio, biomasa y mortalidad"
-              defaultOpen
-            >
-              <div className="grid grid-cols-2 gap-3">
-                <MetricCard
-                  label="N° peces"
-                  value={(selectedVisit?.numeroPeces ?? 0).toLocaleString("es-CL")}
-                  icon={Layers3}
-                  tone="blue"
-                />
-                <MetricCard
-                  label="Peso promedio"
-                  value={`${selectedVisit?.pesoPromedio ?? 0} kg`}
-                  icon={Grid3X3}
-                  tone="blue"
-                />
-                <MetricCard
-                  label="Biomasa"
-                  value={(selectedVisit?.biomasa ?? 0).toLocaleString("es-CL")}
-                  icon={Activity}
-                  tone="emerald"
-                />
-                <MetricCard
-                  label="Mortalidad"
-                  value={`${selectedVisit?.mortalidad ?? 0}%`}
-                  icon={AlertTriangle}
-                  tone="amber"
-                />
-              </div>
-            </AccordionSection>
 
-            <AccordionSection title="Antecedentes ambientales" subtitle="Temperatura y oxígeno del entorno" defaultOpen>
-              <div className="grid grid-cols-2 gap-3">
-                <MetricCard
-                  label="Temperatura"
-                  value={`${selectedVisit?.temperatura ?? 0} °C`}
-                  icon={Thermometer}
-                  tone="blue"
-                />
-                <MetricCard
-                  label="Oxígeno"
-                  value={`${selectedVisit?.oxigeno ?? 0} mg/L`}
-                  icon={Atom}
-                  tone="emerald"
-                />
-              </div>
-            </AccordionSection>
           </div>
         )}
 
@@ -2100,12 +2053,61 @@ export default function App() {
                     onClick={openNecropsyFromVisit}
                     className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[#0F6CBD] bg-white text-sm font-semibold text-[#0F6CBD]"
                   >
-                    <Skull className="h-4 w-4" />
+                    <Stethoscope className="h-4 w-4" />
                     Ir a necropsias asociadas
                   </button>
                 </div>
               </div>
             </section>
+            <AccordionSection
+              title="Antecedentes productivos"
+              subtitle="N° peces, peso promedio, biomasa y mortalidad"
+              defaultOpen
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <MetricCard
+                  label="N° peces"
+                  value={(selectedVisit?.numeroPeces ?? 0).toLocaleString("es-CL")}
+                  icon={Fish}
+                  tone="blue"
+                />
+                <MetricCard
+                  label="Peso promedio"
+                  value={`${selectedVisit?.pesoPromedio ?? 0} kg`}
+                  icon={XLineTop}
+                  tone="blue"
+                />
+                <MetricCard
+                  label="Biomasa"
+                  value={(selectedVisit?.biomasa ?? 0).toLocaleString("es-CL")}
+                  icon={ChartNoAxesCombined}
+                  tone="emerald"
+                />
+                <MetricCard
+                  label="Mortalidad"
+                  value={`${selectedVisit?.mortalidad ?? 0}%`}
+                  icon={Stethoscope}
+                  tone="amber"
+                />
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Antecedentes ambientales" subtitle="Temperatura y oxígeno del entorno" defaultOpen>
+              <div className="grid grid-cols-2 gap-3">
+                <MetricCard
+                  label="Temperatura"
+                  value={`${selectedVisit?.temperatura ?? 0} °C`}
+                  icon={Thermometer}
+                  tone="blue"
+                />
+                <MetricCard
+                  label="Oxígeno"
+                  value={`${selectedVisit?.oxigeno ?? 0} mg/L`}
+                  icon={Atom}
+                  tone="emerald"
+                />
+              </div>
+            </AccordionSection>
 
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
               <SectionHeader title="Contexto clínico" subtitle="Resumen" />
@@ -2309,7 +2311,7 @@ export default function App() {
 
             <AccordionSection title="Actividades de visita" subtitle="Selección múltiple">
               <div className="grid grid-cols-2 gap-2">
-                {visitActivityOptions.map((item) => (
+                {visitChartNoAxesCombinedOptions.map((item) => (
                   <ActionChip
                     key={item}
                     label={item}
@@ -2363,111 +2365,154 @@ export default function App() {
 
         {tab === "muestreo" && (
           <div className="space-y-4">
-            <section className="rounded-[28px] bg-gradient-to-br from-emerald-600 to-emerald-700 p-5 text-white shadow-xl">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Muestreo</p>
-              <h2 className="mt-2 text-xl font-semibold">
-                {samplingContextMode === "visita" && linkedSamplingVisit
-                  ? `Asociado a ${linkedSamplingVisit.id}`
-                  : "Registro independiente"}
-              </h2>
-              <p className="mt-2 text-sm text-white/80">
-                {samplingContextMode === "visita" && linkedSamplingVisit
-                  ? `${linkedSamplingVisit.centro} · ${linkedSamplingVisit.modulo} · ${linkedSamplingVisit.jaula}`
-                  : "Abierto desde menú principal"}
-              </p>
-            </section>
+            <section className="rounded-[28px] bg-gradient-to-br from-emerald-600 to-teal-700 p-5 text-white shadow-xl">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-white/70"></p>
+                  <h2 className="mt-2 text-xl font-semibold">Módulo muestreo</h2>
+                  <p className="mt-2 text-sm text-white/80">
+                    Descripción: En la acuicultura, cuando un médico veterinario realiza una salida a terreno para la toma de muestras, estas pueden clasificarse según su objetivo y el contexto operativo.
+                  </p>
+                </div>
+                <FlaskConical className="h-8 w-8 text-white" />
+              </div>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <SectionHeader title="Contexto del muestreo" />
-              <div className="grid grid-cols-2 gap-2">
+              <div className="mt-4 rounded-2xl bg-white/10 p-4 text-sm">
+                <p className="font-semibold text-white">Contexto del muestreo</p>
+                {samplingContextMode === "visita" && linkedSamplingVisit ? (
+                  <div className="mt-2 space-y-1 text-white/85">
+                    <p>Asociado a visita {linkedSamplingVisit.id}</p>
+                    <p>{linkedSamplingVisit.centro} · {linkedSamplingVisit.modulo} · {linkedSamplingVisit.jaula}</p>
+                    <p>Veterinario responsable: {linkedSamplingVisit.veterinario}</p>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-white/85">
+                    Registro abierto desde inicio como muestreo independiente. Puede vincularse luego a la visita activa.
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <button
                   onClick={linkSamplingToCurrentVisit}
-                  className="h-11 rounded-2xl border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-700"
+                  className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-white font-semibold text-emerald-700"
                 >
-                  Vincular a visita
+                  <ClipboardCheck className="h-4 w-4" />
+                  Asociar a visita activa
                 </button>
                 <button
                   onClick={unlinkSamplingFromVisit}
-                  className="h-11 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
+                  className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 font-semibold text-white"
                 >
+                  <RotateCcw className="h-4 w-4" />
                   Dejar independiente
                 </button>
               </div>
             </section>
 
-            <AccordionSection title="Categoría de muestreo" subtitle="Selección múltiple" defaultOpen>
-              <div className="grid grid-cols-1 gap-2">
-                {samplingCategoryOptions.map((item) => (
-                  <ActionChip
-                    key={item}
-                    label={item}
-                    active={selectedSamplingCategories.includes(item)}
-                    onClick={() => toggleInArray(item, setSelectedSamplingCategories)}
-                  />
-                ))}
-              </div>
-            </AccordionSection>
+            <AccordionSection
+              title="Módulo muestreo"
+              subtitle="Descripción: En la acuicultura, cuando un médico veterinario realiza una salida a terreno para la toma de muestras, estas pueden clasificarse según su objetivo y el contexto operativo."
+              defaultOpen
+            >
+              {/* <div className="rounded-2xl bg-emerald-50 p-4 text-sm text-slate-700">
+                <p className="font-semibold text-slate-900">Configuración rápida de muestreo</p>
+                <p className="mt-1">
+                  Se incorporan categorías y tipos de muestra del documento para que el veterinario seleccione sin escribir en terreno.
+                </p>
+              </div> */}
 
-            <AccordionSection title="Objetivos de muestreo" subtitle="Selección múltiple">
-              <div className="grid grid-cols-2 gap-2">
-                {samplingObjectiveOptions.map((item) => (
-                  <ActionChip
-                    key={item}
-                    label={item}
-                    active={selectedSamplingObjectives.includes(item)}
-                    onClick={() => toggleInArray(item, setSelectedSamplingObjectives)}
-                  />
-                ))}
-              </div>
-            </AccordionSection>
+              <div className="mt-4 space-y-3">
+                <AccordionSection title="Categoría de muestreo" defaultOpen>
+                  <div className="grid grid-cols-2 gap-3">
+                    {samplingCategoryOptions.map((item) => (
+                      <ActionChip
+                        key={item}
+                        label={item}
+                        active={selectedSamplingCategories.includes(item)}
+                        onClick={() => toggleInArray(item, setSelectedSamplingCategories)}
+                      />
+                    ))}
+                  </div>
+                </AccordionSection>
 
-            <AccordionSection title="Enfermedades / agentes" subtitle="Selección múltiple">
-              <div className="grid grid-cols-2 gap-2">
-                {samplingDiseaseOptions.map((item) => (
-                  <ActionChip
-                    key={item}
-                    label={item}
-                    active={selectedSamplingDiseases.includes(item)}
-                    onClick={() => toggleInArray(item, setSelectedSamplingDiseases)}
-                  />
-                ))}
-              </div>
-            </AccordionSection>
+                <AccordionSection title="Objetivo del muestreo" >
+                  <div className="grid grid-cols-2 gap-3">
+                    {samplingObjectiveOptions.map((item) => (
+                      <ActionChip
+                        key={item}
+                        label={item}
+                        active={selectedSamplingObjectives.includes(item)}
+                        onClick={() => toggleInArray(item, setSelectedSamplingObjectives)}
+                      />
+                    ))}
+                  </div>
+                </AccordionSection>
 
-            <AccordionSection title="Tipo de muestra" subtitle="Selección múltiple">
-              <div className="grid grid-cols-2 gap-2">
-                {samplingTypeOptions.map((item) => (
-                  <ActionChip
-                    key={item}
-                    label={item}
-                    active={selectedSamplingTypes.includes(item)}
-                    onClick={() => toggleInArray(item, setSelectedSamplingTypes)}
-                  />
-                ))}
-              </div>
-            </AccordionSection>
+                <AccordionSection title="Enfermedad / agente / foco" >
+                  <div className="grid grid-cols-2 gap-3">
+                    {samplingDiseaseOptions.map((item) => (
+                      <ActionChip
+                        key={item}
+                        label={item}
+                        active={selectedSamplingDiseases.includes(item)}
+                        onClick={() => toggleInArray(item, setSelectedSamplingDiseases)}
+                      />
+                    ))}
+                  </div>
+                </AccordionSection>
 
-            <AccordionSection title="Apoyo ambiental / logístico" subtitle="Selección múltiple">
-              <div className="grid grid-cols-2 gap-2">
-                {samplingEnvironmentOptions.map((item) => (
-                  <ActionChip
-                    key={item}
-                    label={item}
-                    active={selectedSamplingEnvironment.includes(item)}
-                    onClick={() => toggleInArray(item, setSelectedSamplingEnvironment)}
-                  />
-                ))}
-              </div>
-            </AccordionSection>
+                <AccordionSection title="Tipo de muestra" >
+                  <div className="grid grid-cols-2 gap-3">
+                    {samplingTypeOptions.map((item) => (
+                      <ActionChip
+                        key={item}
+                        label={item}
+                        active={selectedSamplingTypes.includes(item)}
+                        onClick={() => toggleInArray(item, setSelectedSamplingTypes)}
+                      />
+                    ))}
+                  </div>
+                </AccordionSection>
 
-            <AccordionSection title="Nota de muestreo" subtitle="Observaciones">
+                <AccordionSection title="Apoyo ambiental / envío / certificación" >
+                  <div className="grid grid-cols-2 gap-3">
+                    {samplingEnvironmentOptions.map((item) => (
+                      <ActionChip
+                        key={item}
+                        label={item}
+                        active={selectedSamplingEnvironment.includes(item)}
+                        onClick={() => toggleInArray(item, setSelectedSamplingEnvironment)}
+                      />
+                    ))}
+                  </div>
+                </AccordionSection>
+              </div>
+
               <textarea
                 value={samplingNote}
                 onChange={(e) => setSamplingNote(e.target.value)}
-                className="min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-emerald-600 focus:bg-white"
-                placeholder="Detalle del muestreo, laboratorio, envío y observaciones"
+                className="mt-4 min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
+                placeholder="Complemento opcional del módulo muestreo"
               />
             </AccordionSection>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setTab("inicio")}
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-sm"
+              >
+                <Home className="h-4 w-4" />
+                Volver a inicio
+              </button>
+              <button
+                onClick={() => setTab("resumen")}
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] text-sm font-semibold text-white shadow-lg"
+              >
+                <FileText className="h-4 w-4" />
+                Ir a resumen
+              </button>
+            </div>
           </div>
         )}
 
@@ -2524,15 +2569,15 @@ export default function App() {
             </section>
 
             <section className="grid grid-cols-2 gap-3">
-              <MetricCard label="Mortalidad día" value={selectedNecropsy.mortalidadDia} icon={AlertTriangle} tone="amber" />
+              <MetricCard label="Mortalidad día" value={selectedNecropsy.mortalidadDia} icon={Stethoscope} tone="amber" />
               <MetricCard
                 label="Mortalidad mes"
                 value={`${selectedNecropsy.mortalidadMesPct}%`}
-                icon={Activity}
+                icon={ChartNoAxesCombined}
                 tone="blue"
               />
               <MetricCard
-                label="Mortalidad acc."
+                label="Mortalidad acumulada"
                 value={`${selectedNecropsy.mortalidadAcumuladaPct}%`}
                 icon={ClipboardList}
                 tone="amber"
