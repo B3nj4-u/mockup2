@@ -28,12 +28,10 @@ import {
   Pill,
   CheckCircle2,
   Clock3,
-  AlertTriangle,
   Wifi,
   WifiOff,
   Thermometer,
   Atom,
-  PackageOpen,
   ClipboardList,
 } from "lucide-react";
 import DiagnosisModule from "./components/DiagnosisModule";
@@ -62,7 +60,6 @@ import {
   visitChartNoAxesCombinedOptions,
   visitFrequencyOptions,
   visitObjectiveOptions,
-  visitSpecificProgramOptions,
   visitsSeed,
   visitTypeOptions,
 } from "./lib/constants";
@@ -805,8 +802,6 @@ export default function App() {
     };
   }, [visits]);
 
-  const centros = useMemo(() => Array.from(new Set(visits.map((v) => v.centro))), [visits]);
-
   const filteredMedicalHistory = useMemo(() => {
     return medicalHistorySeed.filter((item) => {
       if (selectedCentro && item.centro !== selectedCentro) return false;
@@ -842,11 +837,15 @@ export default function App() {
 
   const linkedSamplingVisit = visits.find((visit) => visit.id === samplingLinkedVisitId) || null;
 
-  const recipient = recipientsSeed[selectedVisit.centro] || {
-    nombre: "Destino no definido",
-    cargo: "Pendiente",
-    canal: "Impresión",
-  };
+  const recipient = useMemo(
+    () =>
+      recipientsSeed[selectedVisit.centro] || {
+        nombre: "Destino no definido",
+        cargo: "Pendiente",
+        canal: "Impresión",
+      },
+    [selectedVisit.centro]
+  );
 
   const selectedNecropsy = useMemo(
     () => necropsyRecords.find((record) => record.id === selectedNecropsyId) || necropsyRecords[0] || necropsySeed[0],
