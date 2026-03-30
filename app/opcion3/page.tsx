@@ -1834,10 +1834,10 @@ export default function App() {
         {tab === "inicio" && (
           <div className="space-y-4">
             <section className="overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0F6CBD] to-[#115EA3] p-5 text-white shadow-xl">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Flujo de terreno</p>
-              <h2 className="mt-2 text-2xl font-semibold leading-tight">
+              {/* <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Flujo de terreno</p> */}
+              {/* <h2 className="mt-2 text-2xl font-semibold leading-tight">
                 Centro → módulo → jaula → historial → registro → pontón de ensilaje → mortalidades → necropsias → reporte
-              </h2>
+              </h2> */}
 
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
@@ -2270,7 +2270,7 @@ export default function App() {
               </div>
             </AccordionSection>
 
-            <AccordionSection title="Necropsia" subtitle="Hallazgo resumido">
+            {/* <AccordionSection title="Necropsia" subtitle="Hallazgo resumido">
               <textarea
                 value={necropsyNote}
                 onChange={(e) => setNecropsyNote(e.target.value)}
@@ -2296,9 +2296,9 @@ export default function App() {
                   </div>
                 ))}
               </div>
-            </AccordionSection>
+            </AccordionSection> */}
 
-            <AccordionSection title="Diagnóstico" subtitle="Selección múltiple">
+            {/* <AccordionSection title="Diagnóstico" subtitle="Selección múltiple">
               <div className="grid grid-cols-2 gap-2">
                 {diagnosisOptions.map((item) => (
                   <ActionChip
@@ -2309,9 +2309,9 @@ export default function App() {
                   />
                 ))}
               </div>
-            </AccordionSection>
+            </AccordionSection> */}
 
-            <AccordionSection title="Acciones sugeridas" subtitle="Selección múltiple">
+            {/* <AccordionSection title="Acciones sugeridas" subtitle="Selección múltiple">
               <div className="grid grid-cols-2 gap-2">
                 {actionOptions.map((item) => (
                   <ActionChip
@@ -2322,7 +2322,7 @@ export default function App() {
                   />
                 ))}
               </div>
-            </AccordionSection>
+            </AccordionSection> */}
 
             <AccordionSection title="Tipo de visita" subtitle="Clasificación operativa">
               <div className="grid grid-cols-1 gap-2">
@@ -2376,7 +2376,7 @@ export default function App() {
               </div>
             </AccordionSection>
 
-            <AccordionSection title="Programa específico" subtitle="Selección múltiple">
+            {/* <AccordionSection title="Programa específico" subtitle="Selección múltiple">
               <div className="grid grid-cols-2 gap-2">
                 {visitSpecificProgramOptions.map((item) => (
                   <ActionChip
@@ -2387,16 +2387,16 @@ export default function App() {
                   />
                 ))}
               </div>
-            </AccordionSection>
+            </AccordionSection> */}
 
-            <AccordionSection title="Tratamiento / receta" subtitle="Observaciones">
+            {/* <AccordionSection title="Tratamiento / receta" subtitle="Observaciones">
               <textarea
                 value={treatmentNote}
                 onChange={(e) => setTreatmentNote(e.target.value)}
                 className="min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#0F6CBD] focus:bg-white"
                 placeholder="Tratamiento, receta, medidas de contención o seguimiento"
               />
-            </AccordionSection>
+            </AccordionSection> */}
 
             <section className="grid grid-cols-2 gap-3">
               <button

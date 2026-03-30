@@ -175,6 +175,10 @@ export default function DiagnosisModule({
 
   return (
     <div className="space-y-4">
+        <AccordionSection
+        title="Diagnóstico"
+        subtitle="Módulo de diagnóstico de la visita"
+      >
       <AccordionSection
         title="Selección diagnóstica"
         subtitle="Solo opciones de selección múltiple para exportar al informe"
@@ -288,6 +292,7 @@ export default function DiagnosisModule({
             </div>
           </div>
         </ToneCard>
+      </AccordionSection>
       </AccordionSection>
     </div>
   );
