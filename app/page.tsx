@@ -12,9 +12,6 @@ import {
   ChevronRight,
   MapPin,
   ChartNoAxesCombined,
-  Plus,
-  Send,
-  Download,
   ClipboardCheck,
   X,
   Trash2,
@@ -40,395 +37,55 @@ import {
   ClipboardList,
 } from "lucide-react";
 import DiagnosisModule from "./components/DiagnosisModule";
+import InicioModule from "./components/modules/InicioModule";
+import ResumenModule from "./components/modules/ResumenModule";
+import VisitasModule from "./components/modules/VisitasModule";
 
-type VisitStatus = "Pendiente" | "En progreso" | "Completada";
-type Priority = "Alta" | "Media" | "Baja";
-type TabKey = "inicio" | "visitas" | "registro" | "muestreo" | "necropsias" | "resumen";
-type FilterKey = "Todas" | "Hoy" | "Pendientes" | "En progreso" | "Completadas";
-type HistoryLevel = "centro" | "modulo" | "jaula";
-type SanitaryStatus = "En tratamiento" | "En carencia" | "Sin tratamiento";
-type MortalityCause =
-  | "PGD"
-  | "HSMI"
-  | "SRS"
-  | "TENA"
-  | "Rezago"
-  | "ONI"
-  | "Deforme"
-  | "Daño físico"
-  | "BKD"
-  | "Otras";
-
-type Visit = {
-  id: string;
-  centro: string;
-  empresa: string;
-  fecha: string;
-  hora: string;
-  veterinario: string;
-  region: string;
-  estado: VisitStatus;
-  prioridad: Priority;
-  modulo: string;
-  jaula: string;
-  numeroPeces: number;
-  pesoPromedio: number;
-  biomasa: number;
-  mortalidad: number;
-  temperatura: number;
-  oxigeno: number;
-  hallazgo: string;
-  estadoSanitario: SanitaryStatus;
-};
-
-type VisitForm = {
-  centro: string;
-  empresa: string;
-  fecha: string;
-  hora: string;
-  veterinario: string;
-  region: string;
-  prioridad: Priority;
-  modulo: string;
-  jaula: string;
-  numeroPeces: string;
-  pesoPromedio: string;
-  biomasa: string;
-  mortalidad: string;
-  temperatura: string;
-  oxigeno: string;
-  hallazgo: string;
-  estadoSanitario: SanitaryStatus;
-};
-
-type MedicalEvent = {
-  id: string;
-  fecha: string;
-  tipo: "Tratamiento" | "Muestreo" | "Necropsia" | "Diagnóstico" | "Vacunación" | "Alerta";
-  detalle: string;
-  nivel: HistoryLevel;
-  centro: string;
-  modulo: string;
-  jaula: string;
-  responsable: string;
-};
-
-type CageMortalityRecord = {
-  centro: string;
-  modulo: string;
-  jaula: string;
-  causa: MortalityCause;
-  total: number;
-  porcentaje: number;
-};
-
-type AutoReportRecipient = {
-  nombre: string;
-  cargo: string;
-  canal: string;
-};
-
-type ChecklistItem = {
-  label: string;
-  done: boolean;
-  icon: React.ElementType;
-};
-
-type NecropsyRecord = {
-  id: string;
-  fecha: string;
-  centro: string;
-  modulo: string;
-  jaula: string;
-  veterinario: string;
-  estadoSanitario: SanitaryStatus;
-  mortalidadDia: number;
-  mortalidadMesPct: number;
-  mortalidadAcumuladaPct: number;
-  nroTratamientos: number;
-  nroBanos: number;
-  seleccionado: number;
-  origen: "Ponton de ensilaje";
-  motivo: "Rutina" | "Sospecha" | "Brote" | "Seguimiento tratamiento";
-  hallazgoExterno: string;
-  hallazgoInterno: string;
-  diagnosticoPresuntivo: string;
-  clasificacionPrimaria: string[];
-  clasificacionSecundaria: MortalityCause[];
-  observaciones: string;
-};
-
-const STORAGE_KEYS = {
-  visits: "mockup-visits-v4",
-  selectedVisitId: "mockup-selected-visit-id-v4",
-  clinicalState: "mockup-clinical-state-v4",
-  historyFilters: "mockup-history-filters-v4",
-  samplingFlow: "mockup-sampling-flow-v4",
-  necropsyState: "mockup-necropsy-state-v4",
-  diagnosisModuleState: "mockup-diagnosis-module-state-v1",
-};
-
-const visitsSeed: Visit[] = [
-  {
-    id: "VST-24031",
-    centro: "Quilque Sur",
-    empresa: "AquaChile",
-    fecha: "2026-03-20",
-    hora: "08:30",
-    veterinario: "Pedro Ulloa",
-    region: "Aysén",
-    estado: "Pendiente",
-    prioridad: "Alta",
-    modulo: "QS01",
-    jaula: "QS01-101",
-    numeroPeces: 364266,
-    pesoPromedio: 6.0,
-    biomasa: 2185595,
-    mortalidad: 2.2,
-    temperatura: 11.4,
-    oxigeno: 8.2,
-    hallazgo: "Inspección inicial pendiente.",
-    estadoSanitario: "Sin tratamiento",
-  },
-  {
-    id: "VST-24032",
-    centro: "Capera",
-    empresa: "AquaChile",
-    fecha: "2026-03-21",
-    hora: "10:00",
-    veterinario: "Catalina Ruiz",
-    region: "Los Lagos",
-    estado: "En progreso",
-    prioridad: "Media",
-    modulo: "Módulo 1",
-    jaula: "104",
-    numeroPeces: 248000,
-    pesoPromedio: 5.0,
-    biomasa: 1240000,
-    mortalidad: 1.8,
-    temperatura: 12.1,
-    oxigeno: 7.9,
-    hallazgo: "Seguimiento por PGD.",
-    estadoSanitario: "En tratamiento",
-  },
-  {
-    id: "VST-24033",
-    centro: "Huenquillahue",
-    empresa: "AquaChile",
-    fecha: "2026-03-22",
-    hora: "14:00",
-    veterinario: "Daniel Pacheco",
-    region: "Los Lagos",
-    estado: "Completada",
-    prioridad: "Alta",
-    modulo: "Módulo 2",
-    jaula: "203",
-    numeroPeces: 175000,
-    pesoPromedio: 5.6,
-    biomasa: 980000,
-    mortalidad: 1.2,
-    temperatura: 9.6,
-    oxigeno: 8.6,
-    hallazgo: "Cierre de visita con reporte emitido.",
-    estadoSanitario: "En carencia",
-  },
-];
-
-const alertsSeed = [
-  {
-    titulo: "Mortalidad sobre umbral",
-    descripcion: "QS01-103 registra aumento de mortalidad. Revisar prioridad clínica.",
-    severidad: "Alta",
-  },
-  {
-    titulo: "Muestras pendientes",
-    descripcion: "Existen muestras por despachar antes de finalizar la jornada.",
-    severidad: "Media",
-  },
-] as const;
-
-const diagnosisOptions = ["PGD", "SRS", "HSMI", "Branquial", "Bacteriano", "Parasitológico", "Otras"];
-
-const actionOptions = [
-  "Tomar muestras",
-  "Aplicar tratamiento",
-  "Emitir receta",
-  "Reforzar monitoreo",
-  "Despachar a laboratorio",
-  "Revisar en 48 h",
-];
-
-const visitTypeOptions = [
-  "Programa Sanitario Específico",
-  "Monitoreo de Rutina o Preventiva",
-  "Sospecha Sanitaria o Brote Activo",
-  "Supervisión o Auditoría Interna",
-  "Toma de Muestras Específicas",
-  "Inspección Regulatoria",
-  "Evaluación Pre-Cosecha",
-  "Solicitada por el Cliente",
-];
-
-const visitObjectiveOptions = [
-  "Vigilancia activa",
-  "Cumplimiento normativo",
-  "Control preventivo",
-  "Bienestar animal",
-  "Seguimiento productivo y sanitario",
-  "Diagnóstico",
-  "Toma de decisiones terapéuticas urgentes",
-  "Aseguramiento de calidad",
-  "Certificar condiciones sanitarias",
-  "Evaluar riesgos",
-  "Validación de procedimientos",
-];
-
-const visitFrequencyOptions = [
-  "Semanal",
-  "Quincenal",
-  "Mensual",
-  "Bimensual",
-  "Según calendario establecido",
-  "Según política de la empresa",
-  "A solicitud",
-];
-
-const visitChartNoAxesCombinedOptions = [
-  "Toma de muestras",
-  "Chequeo clínico",
-  "Registros de mortalidad",
-  "Revisión de tratamientos",
-  "Evaluación clínica",
-  "Revisión de condiciones ambientales",
-  "Control de alimentación",
-  "Observación de comportamientos",
-  "Inspección de peces afectados",
-  "Implementación de medidas de contención",
-  "Revisión documental",
-  "Control de uso de antibióticos",
-  "Protocolos de bioseguridad",
-  "Trazabilidad",
-  "Revisión de cargas parasitarias (Caligus)",
-];
-
-const visitSpecificProgramOptions = ["Programa SRS", "Programa ISA", "BKD", "IPN", "PD", "Otro"];
-
-const samplingCategoryOptions = [
-  "Por Programa Sanitario",
-  "Monitoreo de Rutina",
-  "Sospecha o Brote Clínico",
-  "Análisis Microbiológico y Parasitológico",
-  "Muestra Ambiental",
-  "Muestras Genéticas o Histopatologías",
-  "Muestras para Auditoría Interna o requisitos de cliente",
-];
-
-const samplingObjectiveOptions = [
-  "Vigilancia activa",
-  "Cumplimiento normativo",
-  "Detectar alteraciones subclínicas",
-  "Diagnóstico específico",
-  "Toma de decisiones terapéuticas",
-  "Apoyo diagnóstico",
-  "Seguimiento de tratamientos",
-  "Cumplimiento de requisitos de exportación/certificación",
-  "Cumplimiento de estándares internacionales",
-];
-
-const samplingDiseaseOptions = [
-  "SRS",
-  "ISA",
-  "BKD",
-  "IPN",
-  "PD",
-  "P. salmonis",
-  "Tenacibaculum",
-  "Aeromonas",
-  "Caligus rogercresseyi",
-  "Ichthyobodo",
-  "Trichodina",
-  "Otro",
-];
-
-const samplingTypeOptions = [
-  "Riñón",
-  "Bazo",
-  "Hígado",
-  "Corazón",
-  "Cerebro",
-  "Raspado branquial",
-  "Muestra sanguínea",
-  "Branquias",
-  "Intestino",
-  "Piel",
-  "Raspado de mucosa",
-  "Condición general",
-  "Tejidos internos",
-  "Frotis",
-  "Contenido intestinal",
-  "Contenido de lesiones",
-  "Hisopado branquial",
-  "Hisopado intestinal",
-  "Sedimentos",
-  "Bioensayo",
-];
-
-const samplingEnvironmentOptions = [
-  "Temperatura",
-  "Oxígeno",
-  "Salinidad",
-  "Amonio",
-  "pH",
-  "Laboratorio externo",
-  "Centro de cultivo",
-  "Envío urgente a laboratorio",
-  "Toma de muestras vivas",
-  "BAP",
-  "ASC",
-];
-
-const placeholderModules = [
-  // {
-  //   title: "Módulo diagnóstico",
-  //   description:
-  //     "Descripción: el diagnóstico realizado por un médico veterinario es una de las herramientas clave para detectar, controlar y prevenir enfermedades que puedan afectar la producción, el bienestar animal y el cumplimiento normativo.",
-  // },
-  {
-    title: "Módulo análisis de laboratorio",
-    description:
-      "Descripción: Los análisis de laboratorio son fundamentales para complementar el diagnóstico clínico en terreno y tomar decisiones informadas respecto a la salud de los peces, la efectividad de tratamientos y la condición sanitaria del entorno.",
-  },
-  {
-    title: "Módulo PMV",
-    description:
-      "Descripción: La prescripción médico veterinaria es una herramienta clave para asegurar un uso responsable de fármacos, cumplir con la normativa vigente y proteger tanto la salud animal como la inocuidad alimentaria.",
-  },
-  {
-    title: "Módulo trazabilidad clínica",
-    description:
-      "Descripción: La trazabilidad clínica permite vincular cada acción sanitaria, tratamiento, evento clínico o decisión productiva con el grupo o unidad de peces afectada.",
-  },
-];
-
-const defaultForm: VisitForm = {
-  centro: "",
-  empresa: "",
-  fecha: "",
-  hora: "",
-  veterinario: "",
-  region: "",
-  prioridad: "Media",
-  modulo: "",
-  jaula: "",
-  numeroPeces: "",
-  pesoPromedio: "",
-  biomasa: "",
-  mortalidad: "",
-  temperatura: "",
-  oxigeno: "",
-  hallazgo: "",
-  estadoSanitario: "Sin tratamiento",
-};
+import {
+  actionOptions,
+  alertsSeed,
+  defaultForm,
+  diagnosisOptions,
+  medicalHistorySeed,
+  mortalityDistributionSeed,
+  mortalityPrimaryOptions,
+  necropsyMotiveOptions,
+  necropsySeed,
+  placeholderModules,
+  recipientsSeed,
+  samplingCategoryOptions,
+  samplingDiseaseOptions,
+  samplingEnvironmentOptions,
+  samplingObjectiveOptions,
+  samplingTypeOptions,
+  STORAGE_KEYS,
+  visitChartNoAxesCombinedOptions,
+  visitFrequencyOptions,
+  visitObjectiveOptions,
+  visitSpecificProgramOptions,
+  visitsSeed,
+  visitTypeOptions,
+} from "./lib/constants";
+import {
+  createVisitFromForm,
+  matchesVisit,
+  normalizeVisit,
+  restoreChecklist,
+  toForm,
+} from "./lib/visit-utils";
+import type {
+  ChecklistItem,
+  FilterKey,
+  HistoryLevel,
+  MortalityCause,
+  NecropsyRecord,
+  Priority,
+  SanitaryStatus,
+  TabKey,
+  Visit,
+  VisitForm,
+  VisitStatus,
+} from "./lib/types";
 
 const defaultChecklist: ChecklistItem[] = [
   { label: "Inspección visual", done: true, icon: Eye },
@@ -441,194 +98,6 @@ const defaultChecklist: ChecklistItem[] = [
 const checklistIconMap: Record<string, React.ElementType> = Object.fromEntries(
   defaultChecklist.map((item) => [item.label, item.icon])
 );
-
-const mortalityPrimaryOptions = ["SCA", "DaF", "DEF", "Rez", "TC", "Otras"];
-const necropsyMotiveOptions: NecropsyRecord["motivo"][] = [
-  "Rutina",
-  "Sospecha",
-  "Brote",
-  "Seguimiento tratamiento",
-];
-
-const necropsySeed: NecropsyRecord[] = [
-  {
-    id: "NEC-24001",
-    fecha: "2026-03-20",
-    centro: "Quilque Sur",
-    modulo: "QS01",
-    jaula: "QS01-101",
-    veterinario: "Pedro Ulloa",
-    estadoSanitario: "Sin tratamiento",
-    mortalidadDia: 248,
-    mortalidadMesPct: 2.2,
-    mortalidadAcumuladaPct: 11.6,
-    nroTratamientos: 5,
-    nroBanos: 3,
-    seleccionado: 6,
-    origen: "Ponton de ensilaje",
-    motivo: "Sospecha",
-    hallazgoExterno: "Peces letárgicos, leve palidez branquial.",
-    hallazgoInterno: "Bazo agrandado y compromiso branquial compatible con proceso infeccioso.",
-    diagnosticoPresuntivo: "SRS / PGD",
-    clasificacionPrimaria: ["Otras"],
-    clasificacionSecundaria: ["SRS", "PGD"],
-    observaciones: "Tabilla prellenada para impresión y firma en pontón.",
-  },
-  {
-    id: "NEC-24002",
-    fecha: "2026-03-20",
-    centro: "Capera",
-    modulo: "Módulo 1",
-    jaula: "104",
-    veterinario: "Catalina Ruiz",
-    estadoSanitario: "En tratamiento",
-    mortalidadDia: 6,
-    mortalidadMesPct: 1.8,
-    mortalidadAcumuladaPct: 7.4,
-    nroTratamientos: 2,
-    nroBanos: 1,
-    seleccionado: 4,
-    origen: "Ponton de ensilaje",
-    motivo: "Seguimiento tratamiento",
-    hallazgoExterno: "Condición corporal disminuida en muestra de mortalidad.",
-    hallazgoInterno: "Predominio de lesiones branquiales con focos hemorrágicos.",
-    diagnosticoPresuntivo: "PGD",
-    clasificacionPrimaria: ["Rez"],
-    clasificacionSecundaria: ["PGD", "HSMI"],
-    observaciones: "Caso alineado a seguimiento clínico del módulo.",
-  },
-];
-
-type StoredChecklistItem = {
-  label: string;
-  done: boolean;
-};
-
-function restoreChecklist(input: unknown): ChecklistItem[] {
-  if (!Array.isArray(input)) return defaultChecklist;
-
-  return input.map((item) => {
-    const row = item as Partial<StoredChecklistItem>;
-    return {
-      label: row.label ?? "",
-      done: Boolean(row.done),
-      icon: checklistIconMap[row.label ?? ""] ?? Eye,
-    };
-  });
-}
-
-function normalizeVisit(raw: Partial<Visit> | null | undefined): Visit {
-  return {
-    id: raw?.id ?? `VST-${Date.now().toString().slice(-6)}`,
-    centro: raw?.centro ?? "",
-    empresa: raw?.empresa ?? "",
-    fecha: raw?.fecha ?? "",
-    hora: raw?.hora ?? "",
-    veterinario: raw?.veterinario ?? "",
-    region: raw?.region ?? "",
-    estado: raw?.estado ?? "Pendiente",
-    prioridad: raw?.prioridad ?? "Media",
-    modulo: raw?.modulo ?? "",
-    jaula: raw?.jaula ?? "",
-    numeroPeces: Number(raw?.numeroPeces ?? 0),
-    pesoPromedio: Number(raw?.pesoPromedio ?? 0),
-    biomasa: Number(raw?.biomasa ?? 0),
-    mortalidad: Number(raw?.mortalidad ?? 0),
-    temperatura: Number(raw?.temperatura ?? 0),
-    oxigeno: Number(raw?.oxigeno ?? 0),
-    hallazgo: raw?.hallazgo ?? "Sin hallazgo registrado",
-    estadoSanitario: raw?.estadoSanitario ?? "Sin tratamiento",
-  };
-}
-
-const medicalHistorySeed: MedicalEvent[] = [
-  {
-    id: "ME-01",
-    fecha: "2026-03-18",
-    tipo: "Tratamiento",
-    detalle: "Jaula QS01-101 con tratamiento activo y seguimiento clínico.",
-    nivel: "jaula",
-    centro: "Quilque Sur",
-    modulo: "QS01",
-    jaula: "QS01-101",
-    responsable: "Catalina Ruiz",
-  },
-  {
-    id: "ME-02",
-    fecha: "2026-03-17",
-    tipo: "Muestreo",
-    detalle: "Despacho de muestras bacteriológicas desde QS01.",
-    nivel: "modulo",
-    centro: "Quilque Sur",
-    modulo: "QS01",
-    jaula: "",
-    responsable: "Pedro Ulloa",
-  },
-  {
-    id: "ME-03",
-    fecha: "2026-03-16",
-    tipo: "Necropsia",
-    detalle: "Necropsia con hallazgos compatibles con proceso branquial.",
-    nivel: "jaula",
-    centro: "Capera",
-    modulo: "Módulo 1",
-    jaula: "104",
-    responsable: "Pedro Ulloa",
-  },
-  {
-    id: "ME-04",
-    fecha: "2026-03-15",
-    tipo: "Alerta",
-    detalle: "Incremento de mortalidad acumulada a nivel centro.",
-    nivel: "centro",
-    centro: "Huenquillahue",
-    modulo: "",
-    jaula: "",
-    responsable: "Sistema",
-  },
-  {
-    id: "ME-05",
-    fecha: "2026-03-14",
-    tipo: "Diagnóstico",
-    detalle: "Predominio de SRS en módulo 2.",
-    nivel: "modulo",
-    centro: "Huenquillahue",
-    modulo: "Módulo 2",
-    jaula: "",
-    responsable: "Laboratorio",
-  },
-];
-
-const mortalityDistributionSeed: CageMortalityRecord[] = [
-  { centro: "Quilque Sur", modulo: "QS01", jaula: "QS01-101", causa: "SRS", total: 42, porcentaje: 35.9 },
-  { centro: "Quilque Sur", modulo: "QS01", jaula: "QS01-101", causa: "TENA", total: 71, porcentaje: 28.6 },
-  { centro: "Quilque Sur", modulo: "QS01", jaula: "QS01-101", causa: "PGD", total: 8, porcentaje: 3.2 },
-  { centro: "Quilque Sur", modulo: "QS01", jaula: "QS01-102", causa: "SRS", total: 89, porcentaje: 35.9 },
-  { centro: "Capera", modulo: "Módulo 1", jaula: "104", causa: "PGD", total: 19, porcentaje: 52.78 },
-  { centro: "Capera", modulo: "Módulo 1", jaula: "104", causa: "HSMI", total: 5, porcentaje: 13.89 },
-  { centro: "Capera", modulo: "Módulo 1", jaula: "104", causa: "Rezago", total: 4, porcentaje: 11.11 },
-  { centro: "Huenquillahue", modulo: "Módulo 2", jaula: "203", causa: "SRS", total: 24, porcentaje: 27.59 },
-  { centro: "Huenquillahue", modulo: "Módulo 2", jaula: "203", causa: "PGD", total: 20, porcentaje: 22.99 },
-  { centro: "Huenquillahue", modulo: "Módulo 2", jaula: "203", causa: "Daño físico", total: 17, porcentaje: 19.54 },
-];
-
-const recipientsSeed: Record<string, AutoReportRecipient> = {
-  "Quilque Sur": {
-    nombre: "María Torres",
-    cargo: "Asistente operativa",
-    canal: "Outlook / Impresión",
-  },
-  Capera: {
-    nombre: "Javier Méndez",
-    cargo: "Coordinador de soporte",
-    canal: "Outlook / Impresión",
-  },
-  Huenquillahue: {
-    nombre: "Lorena Díaz",
-    cargo: "Administración de centro",
-    canal: "Outlook / Impresión",
-  },
-};
 
 function cn(...classes: Array<string | false | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -1026,76 +495,6 @@ function VisitCard({
   );
 }
 
-function toForm(visit: Visit): VisitForm {
-  return {
-    centro: visit.centro,
-    empresa: visit.empresa,
-    fecha: visit.fecha,
-    hora: visit.hora,
-    veterinario: visit.veterinario,
-    region: visit.region,
-    prioridad: visit.prioridad,
-    modulo: visit.modulo,
-    jaula: visit.jaula,
-    numeroPeces: String(visit.numeroPeces),
-    pesoPromedio: String(visit.pesoPromedio),
-    biomasa: String(visit.biomasa),
-    mortalidad: String(visit.mortalidad),
-    temperatura: String(visit.temperatura),
-    oxigeno: String(visit.oxigeno),
-    hallazgo: visit.hallazgo,
-    estadoSanitario: visit.estadoSanitario,
-  };
-}
-
-function createVisitFromForm(form: VisitForm, existingId?: string, currentState?: VisitStatus): Visit {
-  return {
-    id: existingId || `VST-${Date.now().toString().slice(-6)}`,
-    centro: form.centro.trim(),
-    empresa: form.empresa.trim(),
-    fecha: form.fecha,
-    hora: form.hora,
-    veterinario: form.veterinario.trim(),
-    region: form.region.trim(),
-    estado: currentState || "Pendiente",
-    prioridad: form.prioridad,
-    modulo: form.modulo.trim(),
-    jaula: form.jaula.trim(),
-    numeroPeces: Number(form.numeroPeces || 0),
-    pesoPromedio: Number(form.pesoPromedio || 0),
-    biomasa: Number(form.biomasa || 0),
-    mortalidad: Number(form.mortalidad || 0),
-    temperatura: Number(form.temperatura || 0),
-    oxigeno: Number(form.oxigeno || 0),
-    hallazgo: form.hallazgo.trim() || "Sin hallazgo registrado",
-    estadoSanitario: form.estadoSanitario,
-  };
-}
-
-function matchesVisit(visit: Visit, query: string) {
-  const text = query.toLowerCase().trim();
-  if (!text) return true;
-
-  return [
-    visit.id,
-    visit.centro,
-    visit.empresa,
-    visit.fecha,
-    visit.hora,
-    visit.veterinario,
-    visit.region,
-    visit.estado,
-    visit.prioridad,
-    visit.hallazgo,
-    visit.modulo,
-    visit.jaula,
-    visit.estadoSanitario,
-  ]
-    .join(" ")
-    .toLowerCase()
-    .includes(text);
-}
-
 export default function App() {
   const [ready, setReady] = useState(false);
   const [tab, setTab] = useState<TabKey>("inicio");
@@ -1195,7 +594,7 @@ export default function App() {
         setSamplingNote(parsed.samplingNote ?? "");
         setSelectedDiagnosis(parsed.selectedDiagnosis ?? []);
         setSelectedActions(parsed.selectedActions ?? []);
-        setChecklist(restoreChecklist(parsed.checklist));
+        setChecklist(restoreChecklist(parsed.checklist, defaultChecklist, checklistIconMap, Eye));
         setSelectedVisitTypes(parsed.selectedVisitTypes ?? ["Monitoreo de Rutina o Preventiva"]);
         setSelectedVisitObjectives(parsed.selectedVisitObjectives ?? ["Control preventivo"]);
         setSelectedVisitFrequencies(parsed.selectedVisitFrequencies ?? ["Mensual"]);
@@ -1832,202 +1231,42 @@ export default function App() {
 
       <main className="mx-auto max-w-md px-4 pb-28 pt-4">
         {tab === "inicio" && (
-          <div className="space-y-4">
-            <section className="overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0F6CBD] to-[#115EA3] p-5 text-white shadow-xl">
-              {/* <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Flujo de terreno</p> */}
-              {/* <h2 className="mt-2 text-2xl font-semibold leading-tight">
-                Centro → módulo → jaula → historial → registro → pontón de ensilaje → mortalidades → necropsias → reporte
-              </h2> */}
-
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
-                  <p className="text-sm text-white/70">Pendientes</p>
-                  <p className="mt-2 text-3xl font-semibold">{stats.pendientes}</p>
-                </div>
-                <div className="rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
-                  <p className="text-sm text-white/70">En curso</p>
-                  <p className="mt-2 text-3xl font-semibold">{stats.enCurso}</p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => openVisit(visits[0])}
-                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-white font-semibold text-[#0F6CBD]"
-              >
-                <ClipboardCheck className="h-5 w-5" />
-                Iniciar diagnóstico de siguiente visita
-              </button>
-            </section>
-
-            <SearchBox value={search} onChange={setSearch} onClear={() => setSearch("")} />
-
-            <section className="grid grid-cols-2 gap-3">
-              <MetricCard label="Completadas" value={stats.completadas} icon={CheckCircle2} tone="emerald" />
-              <MetricCard label="Sin señal" value={offline ? "Activo" : "No"} icon={WifiOff} tone="slate" />
-            </section>
-
-            <AccordionSection
-              title="Módulos del sistema"
-              subtitle="Los módulos se abren desde inicio. Muestreo y necropsias también pueden abrirse desde una visita activa."
-              defaultOpen
-            >
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setTab("registro")}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-[#0F6CBD] hover:bg-[#E8F3FC]"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F3FC] text-[#0F6CBD]">
-                    <ClipboardPenLine className="h-5 w-5" />
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-900">Módulo visita</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Registro clínico y sanitario de la visita activa.
-                  </p>
-                </button>
-
-                <button
-                  onClick={openStandaloneSampling}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-emerald-600 hover:bg-emerald-50"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                    <FlaskConical className="h-5 w-5" />
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-900">Módulo muestreo</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Toma de muestras independiente o vinculada a visita.
-                  </p>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setTab("necropsias");
-                    hydrateNecropsyEditor(selectedNecropsy);
-                  }}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-rose-600 hover:bg-rose-50"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-700">
-                    <Stethoscope className="h-5 w-5" />
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-900">Módulo necropsias</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Pontón de ensilaje → mortalidades → clasificación → impresión.
-                  </p>
-                </button>
-
-                {/* <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
-                    <PackageOpen className="h-5 w-5" />
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-900">Bitácora pontón</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Respaldo documental conectado al módulo de necropsias.
-                  </p>
-                </div> */}
-              </div>
-
-              <div className="mt-3 space-y-3">
-                {placeholderModules.map((module) => (
-                  <div key={module.title} className="rounded-2xl bg-slate-50 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">{module.title}</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-600">{module.description}</p>
-                      </div>
-                      <p className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500">
-                        Próximamente
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </AccordionSection>
-
-            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <SectionHeader title="Alertas de hoy" subtitle="Prioridad clínica" />
-              <div className="space-y-3">
-                {alertsSeed.map((alert) => (
-                  <button
-                    key={alert.titulo}
-                    onClick={() => act(`${alert.titulo}: ${alert.descripcion}`)}
-                    className="block w-full rounded-2xl bg-slate-50 p-4 text-left"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">{alert.titulo}</p>
-                        <p className="mt-1 text-sm text-slate-500">{alert.descripcion}</p>
-                      </div>
-                      <StatusBadge value={alert.severidad} />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </section>
-
-
-          </div>
+          <InicioModule
+            stats={stats}
+            openVisit={openVisit}
+            visits={visits}
+            SearchBox={SearchBox}
+            search={search}
+            setSearch={setSearch}
+            MetricCard={MetricCard}
+            offline={offline}
+            AccordionSection={AccordionSection}
+            setTab={setTab}
+            openStandaloneSampling={openStandaloneSampling}
+            hydrateNecropsyEditor={hydrateNecropsyEditor}
+            selectedNecropsy={selectedNecropsy}
+            placeholderModules={placeholderModules}
+            alertsSeed={alertsSeed}
+            act={act}
+            StatusBadge={StatusBadge}
+          />
         )}
 
         {tab === "visitas" && (
-          <div className="space-y-4">
-            <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900">Visitas</h2>
-                  <p className="mt-1 text-sm text-slate-500">Agenda simple con centro, módulo, jaula y estado.</p>
-                </div>
-                <button
-                  onClick={openCreateModal}
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#0F6CBD] text-white"
-                >
-                  <Plus className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {(["Todas", "Hoy", "Pendientes", "En progreso", "Completadas"] as FilterKey[]).map((item) => (
-                  <button
-                    key={item}
-                    onClick={() => setFilter(item)}
-                    className={cn(
-                      "h-10 rounded-2xl border px-3 text-sm font-medium",
-                      filter === item
-                        ? "border-[#0F6CBD] bg-[#E8F3FC] text-[#0F6CBD]"
-                        : "border-slate-200 bg-white text-slate-700"
-                    )}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <SearchBox value={search} onChange={setSearch} onClear={() => setSearch("")} />
-
-            <div className="space-y-3">
-              {filteredVisits.length ? (
-                filteredVisits.map((visit) => (
-                  <VisitCard
-                    key={visit.id}
-                    visit={visit}
-                    onOpen={openVisit}
-                    onEdit={openEditModal}
-                    onDelete={deleteVisit}
-                  />
-                ))
-              ) : (
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-6 text-center shadow-sm">
-                  <p className="text-sm font-medium text-slate-800">No hay visitas para este filtro</p>
-                  <button
-                    onClick={openCreateModal}
-                    className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] px-4 text-sm font-semibold text-white"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Crear visita
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+          <VisitasModule
+            openCreateModal={openCreateModal}
+            filter={filter}
+            setFilter={setFilter}
+            cn={cn}
+            SearchBox={SearchBox}
+            search={search}
+            setSearch={setSearch}
+            filteredVisits={filteredVisits}
+            VisitCard={VisitCard}
+            openVisit={openVisit}
+            openEditModal={openEditModal}
+            deleteVisit={deleteVisit}
+          />
         )}
 
         {tab === "registro" && (
@@ -2799,80 +2038,17 @@ export default function App() {
         )}
 
         {tab === "resumen" && (
-          <div className="space-y-4">
-            <section className="rounded-[28px] bg-gradient-to-br from-slate-900 to-slate-700 p-5 text-white shadow-xl">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Resumen integrado</p>
-              <h2 className="mt-2 text-xl font-semibold">{selectedVisit.id}</h2>
-              <p className="mt-2 text-sm text-white/80">
-                {selectedVisit.centro} · {selectedModulo} · {selectedJaula}
-              </p>
-            </section>
-
-            <AccordionSection title="Ficha sanitaria" subtitle="Visita + muestreo + necropsia" defaultOpen>
-              <div className="space-y-3 text-sm text-slate-700">
-                <div className="rounded-2xl bg-slate-50 p-3">
-                  <p className="font-semibold text-slate-900">Visita</p>
-                  <p className="mt-1">{generatedReport.tipoVisita}</p>
-                  <p className="mt-1">{generatedReport.objetivoVisita}</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-3">
-                  <p className="font-semibold text-slate-900">Muestreo</p>
-                  <p className="mt-1">{generatedReport.categoriaMuestreo}</p>
-                  <p className="mt-1">{generatedReport.tipoMuestra}</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-3">
-                  <p className="font-semibold text-slate-900">Necropsia</p>
-                  <p className="mt-1">{generatedReport.necropsiaIntegrada.diagnosticoPresuntivo}</p>
-                  <p className="mt-1">
-                    {generatedReport.necropsiaIntegrada.clasificacionPrimaria} /{" "}
-                    {generatedReport.necropsiaIntegrada.clasificacionSecundaria}
-                  </p>
-                </div>
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="Mortalidad y causas" subtitle="Distribución del contexto">
-              <div className="space-y-2">
-                {aggregatedByCause.map((item) => (
-                  <div key={item.causa} className="flex items-center justify-between rounded-2xl bg-slate-50 p-3">
-                    <p className="text-sm font-medium text-slate-800">{item.causa}</p>
-                    <p className="text-sm font-semibold text-slate-900">{item.total}</p>
-                  </div>
-                ))}
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="Destino del reporte" subtitle="Impresión / envío">
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-sm text-slate-700">
-                  <span className="font-semibold">Destinatario:</span> {recipient.nombre}
-                </p>
-                <p className="mt-1 text-sm text-slate-700">
-                  <span className="font-semibold">Cargo:</span> {recipient.cargo}
-                </p>
-                <p className="mt-1 text-sm text-slate-700">
-                  <span className="font-semibold">Canal:</span> {recipient.canal}
-                </p>
-              </div>
-            </AccordionSection>
-
-            <section className="grid grid-cols-2 gap-3">
-              <button
-                onClick={exportSummary}
-                className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
-              >
-                <Download className="h-4 w-4" />
-                Exportar
-              </button>
-              <button
-                onClick={sendToTeams}
-                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] text-sm font-semibold text-white"
-              >
-                <Send className="h-4 w-4" />
-                Marcar envío
-              </button>
-            </section>
-          </div>
+          <ResumenModule
+            selectedVisit={selectedVisit}
+            selectedModulo={selectedModulo}
+            selectedJaula={selectedJaula}
+            AccordionSection={AccordionSection}
+            generatedReport={generatedReport}
+            aggregatedByCause={aggregatedByCause}
+            recipient={recipient}
+            exportSummary={exportSummary}
+            sendToTeams={sendToTeams}
+          />
         )}
       </main>
 

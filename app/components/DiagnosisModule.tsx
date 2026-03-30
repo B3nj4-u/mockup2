@@ -10,27 +10,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 
-type Visit = {
-  id: string;
-  centro: string;
-  empresa: string;
-  fecha: string;
-  hora: string;
-  veterinario: string;
-  region: string;
-  estado: "Pendiente" | "En progreso" | "Completada";
-  prioridad: "Alta" | "Media" | "Baja";
-  modulo: string;
-  jaula: string;
-  numeroPeces: number;
-  pesoPromedio: number;
-  biomasa: number;
-  mortalidad: number;
-  temperatura: number;
-  oxigeno: number;
-  hallazgo: string;
-  estadoSanitario: "En tratamiento" | "En carencia" | "Sin tratamiento";
-};
+import type { Visit } from "../lib/types";
 
 type AccordionSectionProps = {
   title: string;
