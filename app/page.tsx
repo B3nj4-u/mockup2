@@ -12,6 +12,9 @@ import {
   ChevronRight,
   MapPin,
   ChartNoAxesCombined,
+  Plus,
+  Send,
+  Download,
   ClipboardCheck,
   X,
   Trash2,
@@ -28,61 +31,406 @@ import {
   Pill,
   CheckCircle2,
   Clock3,
+  AlertTriangle,
   Wifi,
   WifiOff,
   Thermometer,
   Atom,
+  PackageOpen,
   ClipboardList,
 } from "lucide-react";
 import DiagnosisModule from "./components/DiagnosisModule";
-import InicioModule from "./components/modules/InicioModule";
-import ResumenModule from "./components/modules/ResumenModule";
-import VisitasModule from "./components/modules/VisitasModule";
 
-import {
-  actionOptions,
-  alertsSeed,
-  defaultForm,
-  diagnosisOptions,
-  medicalHistorySeed,
-  mortalityDistributionSeed,
-  mortalityPrimaryOptions,
-  necropsyMotiveOptions,
-  necropsySeed,
-  placeholderModules,
-  recipientsSeed,
-  samplingCategoryOptions,
-  samplingDiseaseOptions,
-  samplingEnvironmentOptions,
-  samplingObjectiveOptions,
-  samplingTypeOptions,
-  STORAGE_KEYS,
-  visitChartNoAxesCombinedOptions,
-  visitFrequencyOptions,
-  visitObjectiveOptions,
-  visitsSeed,
-  visitTypeOptions,
-} from "./lib/constants";
-import {
-  createVisitFromForm,
-  matchesVisit,
-  normalizeVisit,
-  restoreChecklist,
-  toForm,
-} from "./lib/visit-utils";
-import type {
-  ChecklistItem,
-  FilterKey,
-  HistoryLevel,
-  MortalityCause,
-  NecropsyRecord,
-  Priority,
-  SanitaryStatus,
-  TabKey,
-  Visit,
-  VisitForm,
-  VisitStatus,
-} from "./lib/types";
+type VisitStatus = "Pendiente" | "En progreso" | "Completada";
+type Priority = "Alta" | "Media" | "Baja";
+type TabKey = "inicio" | "visitas" | "registro" | "muestreo" | "necropsias" | "resumen";
+type FilterKey = "Todas" | "Hoy" | "Pendientes" | "En progreso" | "Completadas";
+type HistoryLevel = "centro" | "modulo" | "jaula";
+type SanitaryStatus = "En tratamiento" | "En carencia" | "Sin tratamiento";
+type MortalityCause =
+  | "PGD"
+  | "HSMI"
+  | "SRS"
+  | "TENA"
+  | "Rezago"
+  | "ONI"
+  | "Deforme"
+  | "Daño físico"
+  | "BKD"
+  | "Otras";
+
+type Visit = {
+  id: string;
+  centro: string;
+  empresa: string;
+  fecha: string;
+  hora: string;
+  veterinario: string;
+  region: string;
+  estado: VisitStatus;
+  prioridad: Priority;
+  modulo: string;
+  jaula: string;
+  numeroPeces: number;
+  pesoPromedio: number;
+  biomasa: number;
+  mortalidad: number;
+  temperatura: number;
+  oxigeno: number;
+  hallazgo: string;
+  estadoSanitario: SanitaryStatus;
+};
+
+type VisitForm = {
+  centro: string;
+  empresa: string;
+  fecha: string;
+  hora: string;
+  veterinario: string;
+  region: string;
+  prioridad: Priority;
+  modulo: string;
+  jaula: string;
+  numeroPeces: string;
+  pesoPromedio: string;
+  biomasa: string;
+  mortalidad: string;
+  temperatura: string;
+  oxigeno: string;
+  hallazgo: string;
+  estadoSanitario: SanitaryStatus;
+};
+
+type MedicalEvent = {
+  id: string;
+  fecha: string;
+  tipo: "Tratamiento" | "Muestreo" | "Necropsia" | "Diagnóstico" | "Vacunación" | "Alerta";
+  detalle: string;
+  nivel: HistoryLevel;
+  centro: string;
+  modulo: string;
+  jaula: string;
+  responsable: string;
+};
+
+type CageMortalityRecord = {
+  centro: string;
+  modulo: string;
+  jaula: string;
+  causa: MortalityCause;
+  total: number;
+  porcentaje: number;
+};
+
+type AutoReportRecipient = {
+  nombre: string;
+  cargo: string;
+  canal: string;
+};
+
+type ChecklistItem = {
+  label: string;
+  done: boolean;
+  icon: React.ElementType;
+};
+
+type SecondaryClassificationMatrix = Partial<Record<MortalityCause, Record<string, number>>>;
+
+type NecropsyRecord = {
+  id: string;
+  fecha: string;
+  centro: string;
+  modulo: string;
+  jaula: string;
+  veterinario: string;
+  estadoSanitario: SanitaryStatus;
+  mortalidadDia: number;
+  mortalidadMesPct: number;
+  mortalidadAcumuladaPct: number;
+  nroTratamientos: number;
+  nroBanos: number;
+  seleccionado: number;
+  origen: "Ponton de ensilaje";
+  motivo: "Rutina" | "Sospecha" | "Brote" | "Seguimiento tratamiento";
+  hallazgoExterno: string;
+  hallazgoInterno: string;
+  diagnosticoPresuntivo: string;
+  clasificacionSecundaria: MortalityCause[];
+  clasificacionSecundariaDetalle?: SecondaryClassificationMatrix;
+  observaciones: string;
+};
+
+const STORAGE_KEYS = {
+  visits: "mockup-visits-v4",
+  selectedVisitId: "mockup-selected-visit-id-v4",
+  clinicalState: "mockup-clinical-state-v4",
+  historyFilters: "mockup-history-filters-v4",
+  samplingFlow: "mockup-sampling-flow-v4",
+  necropsyState: "mockup-necropsy-state-v4",
+  diagnosisModuleState: "mockup-diagnosis-module-state-v1",
+};
+
+const visitsSeed: Visit[] = [
+  {
+    id: "VST-24031",
+    centro: "Quilque Sur",
+    empresa: "AquaChile",
+    fecha: "2026-03-20",
+    hora: "08:30",
+    veterinario: "Pedro Ulloa",
+    region: "Aysén",
+    estado: "Pendiente",
+    prioridad: "Alta",
+    modulo: "QS01",
+    jaula: "QS01-101",
+    numeroPeces: 364266,
+    pesoPromedio: 6.0,
+    biomasa: 2185595,
+    mortalidad: 2.2,
+    temperatura: 11.4,
+    oxigeno: 8.2,
+    hallazgo: "Inspección inicial pendiente.",
+    estadoSanitario: "Sin tratamiento",
+  },
+  {
+    id: "VST-24032",
+    centro: "Capera",
+    empresa: "AquaChile",
+    fecha: "2026-03-21",
+    hora: "10:00",
+    veterinario: "Catalina Ruiz",
+    region: "Los Lagos",
+    estado: "En progreso",
+    prioridad: "Media",
+    modulo: "Módulo 1",
+    jaula: "104",
+    numeroPeces: 248000,
+    pesoPromedio: 5.0,
+    biomasa: 1240000,
+    mortalidad: 1.8,
+    temperatura: 12.1,
+    oxigeno: 7.9,
+    hallazgo: "Seguimiento por PGD.",
+    estadoSanitario: "En tratamiento",
+  },
+  {
+    id: "VST-24033",
+    centro: "Huenquillahue",
+    empresa: "AquaChile",
+    fecha: "2026-03-22",
+    hora: "14:00",
+    veterinario: "Daniel Pacheco",
+    region: "Los Lagos",
+    estado: "Completada",
+    prioridad: "Alta",
+    modulo: "Módulo 2",
+    jaula: "203",
+    numeroPeces: 175000,
+    pesoPromedio: 5.6,
+    biomasa: 980000,
+    mortalidad: 1.2,
+    temperatura: 9.6,
+    oxigeno: 8.6,
+    hallazgo: "Cierre de visita con reporte emitido.",
+    estadoSanitario: "En carencia",
+  },
+];
+
+const alertsSeed = [
+  {
+    titulo: "Mortalidad sobre umbral",
+    descripcion: "QS01-103 registra aumento de mortalidad. Revisar prioridad clínica.",
+    severidad: "Alta",
+  },
+  {
+    titulo: "Muestras pendientes",
+    descripcion: "Existen muestras por despachar antes de finalizar la jornada.",
+    severidad: "Media",
+  },
+] as const;
+
+const diagnosisOptions = ["PGD", "SRS", "HSMI", "Branquial", "Bacteriano", "Parasitológico", "Otras"];
+
+const actionOptions = [
+  "Tomar muestras",
+  "Aplicar tratamiento",
+  "Emitir receta",
+  "Reforzar monitoreo",
+  "Despachar a laboratorio",
+  "Revisar en 48 h",
+];
+
+const visitTypeOptions = [
+  "Programa Sanitario Específico",
+  "Monitoreo de Rutina o Preventiva",
+  "Sospecha Sanitaria o Brote Activo",
+  "Supervisión o Auditoría Interna",
+  "Toma de Muestras Específicas",
+  "Inspección Regulatoria",
+  "Evaluación Pre-Cosecha",
+  "Solicitada por el Cliente",
+];
+
+const visitObjectiveOptions = [
+  "Vigilancia activa",
+  "Cumplimiento normativo",
+  "Control preventivo",
+  "Bienestar animal",
+  "Seguimiento productivo y sanitario",
+  "Diagnóstico",
+  "Toma de decisiones terapéuticas urgentes",
+  "Aseguramiento de calidad",
+  "Certificar condiciones sanitarias",
+  "Evaluar riesgos",
+  "Validación de procedimientos",
+];
+
+const visitFrequencyOptions = [
+  "Semanal",
+  "Quincenal",
+  "Mensual",
+  "Bimensual",
+  "Según calendario establecido",
+  "Según política de la empresa",
+  "A solicitud",
+];
+
+const visitChartNoAxesCombinedOptions = [
+  "Toma de muestras",
+  "Chequeo clínico",
+  "Registros de mortalidad",
+  "Revisión de tratamientos",
+  "Evaluación clínica",
+  "Revisión de condiciones ambientales",
+  "Control de alimentación",
+  "Observación de comportamientos",
+  "Inspección de peces afectados",
+  "Implementación de medidas de contención",
+  "Revisión documental",
+  "Control de uso de antibióticos",
+  "Protocolos de bioseguridad",
+  "Trazabilidad",
+  "Revisión de cargas parasitarias (Caligus)",
+];
+
+const visitSpecificProgramOptions = ["Programa SRS", "Programa ISA", "BKD", "IPN", "PD", "Otro"];
+
+const samplingCategoryOptions = [
+  "Por Programa Sanitario",
+  "Monitoreo de Rutina",
+  "Sospecha o Brote Clínico",
+  "Análisis Microbiológico y Parasitológico",
+  "Muestra Ambiental",
+  "Muestras Genéticas o Histopatologías",
+  "Muestras para Auditoría Interna o requisitos de cliente",
+];
+
+const samplingObjectiveOptions = [
+  "Vigilancia activa",
+  "Cumplimiento normativo",
+  "Detectar alteraciones subclínicas",
+  "Diagnóstico específico",
+  "Toma de decisiones terapéuticas",
+  "Apoyo diagnóstico",
+  "Seguimiento de tratamientos",
+  "Cumplimiento de requisitos de exportación/certificación",
+  "Cumplimiento de estándares internacionales",
+];
+
+const samplingDiseaseOptions = [
+  "SRS",
+  "ISA",
+  "BKD",
+  "IPN",
+  "PD",
+  "P. salmonis",
+  "Tenacibaculum",
+  "Aeromonas",
+  "Caligus rogercresseyi",
+  "Ichthyobodo",
+  "Trichodina",
+  "Otro",
+];
+
+const samplingTypeOptions = [
+  "Riñón",
+  "Bazo",
+  "Hígado",
+  "Corazón",
+  "Cerebro",
+  "Raspado branquial",
+  "Muestra sanguínea",
+  "Branquias",
+  "Intestino",
+  "Piel",
+  "Raspado de mucosa",
+  "Condición general",
+  "Tejidos internos",
+  "Frotis",
+  "Contenido intestinal",
+  "Contenido de lesiones",
+  "Hisopado branquial",
+  "Hisopado intestinal",
+  "Sedimentos",
+  "Bioensayo",
+];
+
+const samplingEnvironmentOptions = [
+  "Temperatura",
+  "Oxígeno",
+  "Salinidad",
+  "Amonio",
+  "pH",
+  "Laboratorio externo",
+  "Centro de cultivo",
+  "Envío urgente a laboratorio",
+  "Toma de muestras vivas",
+  "BAP",
+  "ASC",
+];
+
+const placeholderModules = [
+  // {
+  //   title: "Módulo diagnóstico",
+  //   description:
+  //     "Descripción: el diagnóstico realizado por un médico veterinario es una de las herramientas clave para detectar, controlar y prevenir enfermedades que puedan afectar la producción, el bienestar animal y el cumplimiento normativo.",
+  // },
+  {
+    title: "Módulo análisis de laboratorio",
+    description:
+      "Descripción: Los análisis de laboratorio son fundamentales para complementar el diagnóstico clínico en terreno y tomar decisiones informadas respecto a la salud de los peces, la efectividad de tratamientos y la condición sanitaria del entorno.",
+  },
+  {
+    title: "Módulo PMV",
+    description:
+      "Descripción: La prescripción médico veterinaria es una herramienta clave para asegurar un uso responsable de fármacos, cumplir con la normativa vigente y proteger tanto la salud animal como la inocuidad alimentaria.",
+  },
+  {
+    title: "Módulo trazabilidad clínica",
+    description:
+      "Descripción: La trazabilidad clínica permite vincular cada acción sanitaria, tratamiento, evento clínico o decisión productiva con el grupo o unidad de peces afectada.",
+  },
+];
+
+const defaultForm: VisitForm = {
+  centro: "",
+  empresa: "",
+  fecha: "",
+  hora: "",
+  veterinario: "",
+  region: "",
+  prioridad: "Media",
+  modulo: "",
+  jaula: "",
+  numeroPeces: "",
+  pesoPromedio: "",
+  biomasa: "",
+  mortalidad: "",
+  temperatura: "",
+  oxigeno: "",
+  hallazgo: "",
+  estadoSanitario: "Sin tratamiento",
+};
 
 const defaultChecklist: ChecklistItem[] = [
   { label: "Inspección visual", done: true, icon: Eye },
@@ -95,6 +443,236 @@ const defaultChecklist: ChecklistItem[] = [
 const checklistIconMap: Record<string, React.ElementType> = Object.fromEntries(
   defaultChecklist.map((item) => [item.label, item.icon])
 );
+
+const necropsyMotiveOptions: NecropsyRecord["motivo"][] = [
+  "Rutina",
+  "Sospecha",
+  "Brote",
+  "Seguimiento tratamiento",
+];
+
+const necropsySeed: NecropsyRecord[] = [
+  {
+    id: "NEC-24001",
+    fecha: "2026-03-20",
+    centro: "Quilque Sur",
+    modulo: "QS01",
+    jaula: "QS01-101",
+    veterinario: "Pedro Ulloa",
+    estadoSanitario: "Sin tratamiento",
+    mortalidadDia: 248,
+    mortalidadMesPct: 2.2,
+    mortalidadAcumuladaPct: 11.6,
+    nroTratamientos: 5,
+    nroBanos: 3,
+    seleccionado: 6,
+    origen: "Ponton de ensilaje",
+    motivo: "Sospecha",
+    hallazgoExterno: "Peces letárgicos, leve palidez branquial.",
+    hallazgoInterno: "Bazo agrandado y compromiso branquial compatible con proceso infeccioso.",
+    diagnosticoPresuntivo: "SRS / PGD",
+    clasificacionSecundaria: ["SRS", "PGD"],
+    clasificacionSecundariaDetalle: {
+      SRS: { "QS01-101": 2, "QS01-102": 1 },
+      PGD: { "QS01-101": 1, "QS01-102": 1 },
+    },
+    observaciones: "Tabilla prellenada para impresión y firma en pontón.",
+  },
+  {
+    id: "NEC-24002",
+    fecha: "2026-03-20",
+    centro: "Capera",
+    modulo: "Módulo 1",
+    jaula: "104",
+    veterinario: "Catalina Ruiz",
+    estadoSanitario: "En tratamiento",
+    mortalidadDia: 6,
+    mortalidadMesPct: 1.8,
+    mortalidadAcumuladaPct: 7.4,
+    nroTratamientos: 2,
+    nroBanos: 1,
+    seleccionado: 4,
+    origen: "Ponton de ensilaje",
+    motivo: "Seguimiento tratamiento",
+    hallazgoExterno: "Condición corporal disminuida en muestra de mortalidad.",
+    hallazgoInterno: "Predominio de lesiones branquiales con focos hemorrágicos.",
+    diagnosticoPresuntivo: "PGD",
+    clasificacionSecundaria: ["PGD", "HSMI"],
+    clasificacionSecundariaDetalle: {
+      PGD: { "104": 3 },
+      HSMI: { "104": 1 },
+    },
+    observaciones: "Caso alineado a seguimiento clínico del módulo.",
+  },
+];
+
+type StoredChecklistItem = {
+  label: string;
+  done: boolean;
+};
+
+function restoreChecklist(input: unknown): ChecklistItem[] {
+  if (!Array.isArray(input)) return defaultChecklist;
+
+  return input.map((item) => {
+    const row = item as Partial<StoredChecklistItem>;
+    return {
+      label: row.label ?? "",
+      done: Boolean(row.done),
+      icon: checklistIconMap[row.label ?? ""] ?? Eye,
+    };
+  });
+}
+
+function normalizeVisit(raw: Partial<Visit> | null | undefined): Visit {
+  return {
+    id: raw?.id ?? `VST-${Date.now().toString().slice(-6)}`,
+    centro: raw?.centro ?? "",
+    empresa: raw?.empresa ?? "",
+    fecha: raw?.fecha ?? "",
+    hora: raw?.hora ?? "",
+    veterinario: raw?.veterinario ?? "",
+    region: raw?.region ?? "",
+    estado: raw?.estado ?? "Pendiente",
+    prioridad: raw?.prioridad ?? "Media",
+    modulo: raw?.modulo ?? "",
+    jaula: raw?.jaula ?? "",
+    numeroPeces: Number(raw?.numeroPeces ?? 0),
+    pesoPromedio: Number(raw?.pesoPromedio ?? 0),
+    biomasa: Number(raw?.biomasa ?? 0),
+    mortalidad: Number(raw?.mortalidad ?? 0),
+    temperatura: Number(raw?.temperatura ?? 0),
+    oxigeno: Number(raw?.oxigeno ?? 0),
+    hallazgo: raw?.hallazgo ?? "Sin hallazgo registrado",
+    estadoSanitario: raw?.estadoSanitario ?? "Sin tratamiento",
+  };
+}
+
+function getMatrixFromRecord(record: NecropsyRecord | null | undefined): SecondaryClassificationMatrix {
+  if (!record?.clasificacionSecundariaDetalle) return {};
+
+  return Object.fromEntries(
+    Object.entries(record.clasificacionSecundariaDetalle).map(([cause, cageMap]) => [
+      cause,
+      Object.fromEntries(
+        Object.entries(cageMap || {}).filter(([, amount]) => Number(amount) > 0).map(([cage, amount]) => [cage, Number(amount)])
+      ),
+    ])
+  ) as SecondaryClassificationMatrix;
+}
+
+function summarizeSecondaryMatrix(matrix: SecondaryClassificationMatrix) {
+  const grouped: Record<string, Array<{ causa: MortalityCause; cantidad: number }>> = {};
+
+  Object.entries(matrix).forEach(([cause, cageMap]) => {
+    Object.entries(cageMap || {}).forEach(([jaula, cantidad]) => {
+      const numericAmount = Number(cantidad || 0);
+      if (numericAmount <= 0) return;
+
+      if (!grouped[jaula]) grouped[jaula] = [];
+      grouped[jaula].push({
+        causa: cause as MortalityCause,
+        cantidad: numericAmount,
+      });
+    });
+  });
+
+  return Object.entries(grouped)
+    .map(([jaula, items]) => ({
+      jaula,
+      items: items.sort((a, b) => a.causa.localeCompare(b.causa)),
+    }))
+    .sort((a, b) => a.jaula.localeCompare(b.jaula, undefined, { numeric: true }));
+}
+
+const medicalHistorySeed: MedicalEvent[] = [
+  {
+    id: "ME-01",
+    fecha: "2026-03-18",
+    tipo: "Tratamiento",
+    detalle: "Jaula QS01-101 con tratamiento activo y seguimiento clínico.",
+    nivel: "jaula",
+    centro: "Quilque Sur",
+    modulo: "QS01",
+    jaula: "QS01-101",
+    responsable: "Catalina Ruiz",
+  },
+  {
+    id: "ME-02",
+    fecha: "2026-03-17",
+    tipo: "Muestreo",
+    detalle: "Despacho de muestras bacteriológicas desde QS01.",
+    nivel: "modulo",
+    centro: "Quilque Sur",
+    modulo: "QS01",
+    jaula: "",
+    responsable: "Pedro Ulloa",
+  },
+  {
+    id: "ME-03",
+    fecha: "2026-03-16",
+    tipo: "Necropsia",
+    detalle: "Necropsia con hallazgos compatibles con proceso branquial.",
+    nivel: "jaula",
+    centro: "Capera",
+    modulo: "Módulo 1",
+    jaula: "104",
+    responsable: "Pedro Ulloa",
+  },
+  {
+    id: "ME-04",
+    fecha: "2026-03-15",
+    tipo: "Alerta",
+    detalle: "Incremento de mortalidad acumulada a nivel centro.",
+    nivel: "centro",
+    centro: "Huenquillahue",
+    modulo: "",
+    jaula: "",
+    responsable: "Sistema",
+  },
+  {
+    id: "ME-05",
+    fecha: "2026-03-14",
+    tipo: "Diagnóstico",
+    detalle: "Predominio de SRS en módulo 2.",
+    nivel: "modulo",
+    centro: "Huenquillahue",
+    modulo: "Módulo 2",
+    jaula: "",
+    responsable: "Laboratorio",
+  },
+];
+
+const mortalityDistributionSeed: CageMortalityRecord[] = [
+  { centro: "Quilque Sur", modulo: "QS01", jaula: "QS01-101", causa: "SRS", total: 42, porcentaje: 35.9 },
+  { centro: "Quilque Sur", modulo: "QS01", jaula: "QS01-101", causa: "TENA", total: 71, porcentaje: 28.6 },
+  { centro: "Quilque Sur", modulo: "QS01", jaula: "QS01-101", causa: "PGD", total: 8, porcentaje: 3.2 },
+  { centro: "Quilque Sur", modulo: "QS01", jaula: "QS01-102", causa: "SRS", total: 89, porcentaje: 35.9 },
+  { centro: "Capera", modulo: "Módulo 1", jaula: "104", causa: "PGD", total: 19, porcentaje: 52.78 },
+  { centro: "Capera", modulo: "Módulo 1", jaula: "104", causa: "HSMI", total: 5, porcentaje: 13.89 },
+  { centro: "Capera", modulo: "Módulo 1", jaula: "104", causa: "Rezago", total: 4, porcentaje: 11.11 },
+  { centro: "Huenquillahue", modulo: "Módulo 2", jaula: "203", causa: "SRS", total: 24, porcentaje: 27.59 },
+  { centro: "Huenquillahue", modulo: "Módulo 2", jaula: "203", causa: "PGD", total: 20, porcentaje: 22.99 },
+  { centro: "Huenquillahue", modulo: "Módulo 2", jaula: "203", causa: "Daño físico", total: 17, porcentaje: 19.54 },
+];
+
+const recipientsSeed: Record<string, AutoReportRecipient> = {
+  "Quilque Sur": {
+    nombre: "María Torres",
+    cargo: "Asistente operativa",
+    canal: "Outlook / Impresión",
+  },
+  Capera: {
+    nombre: "Javier Méndez",
+    cargo: "Coordinador de soporte",
+    canal: "Outlook / Impresión",
+  },
+  Huenquillahue: {
+    nombre: "Lorena Díaz",
+    cargo: "Administración de centro",
+    canal: "Outlook / Impresión",
+  },
+};
 
 function cn(...classes: Array<string | false | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -492,6 +1070,76 @@ function VisitCard({
   );
 }
 
+function toForm(visit: Visit): VisitForm {
+  return {
+    centro: visit.centro,
+    empresa: visit.empresa,
+    fecha: visit.fecha,
+    hora: visit.hora,
+    veterinario: visit.veterinario,
+    region: visit.region,
+    prioridad: visit.prioridad,
+    modulo: visit.modulo,
+    jaula: visit.jaula,
+    numeroPeces: String(visit.numeroPeces),
+    pesoPromedio: String(visit.pesoPromedio),
+    biomasa: String(visit.biomasa),
+    mortalidad: String(visit.mortalidad),
+    temperatura: String(visit.temperatura),
+    oxigeno: String(visit.oxigeno),
+    hallazgo: visit.hallazgo,
+    estadoSanitario: visit.estadoSanitario,
+  };
+}
+
+function createVisitFromForm(form: VisitForm, existingId?: string, currentState?: VisitStatus): Visit {
+  return {
+    id: existingId || `VST-${Date.now().toString().slice(-6)}`,
+    centro: form.centro.trim(),
+    empresa: form.empresa.trim(),
+    fecha: form.fecha,
+    hora: form.hora,
+    veterinario: form.veterinario.trim(),
+    region: form.region.trim(),
+    estado: currentState || "Pendiente",
+    prioridad: form.prioridad,
+    modulo: form.modulo.trim(),
+    jaula: form.jaula.trim(),
+    numeroPeces: Number(form.numeroPeces || 0),
+    pesoPromedio: Number(form.pesoPromedio || 0),
+    biomasa: Number(form.biomasa || 0),
+    mortalidad: Number(form.mortalidad || 0),
+    temperatura: Number(form.temperatura || 0),
+    oxigeno: Number(form.oxigeno || 0),
+    hallazgo: form.hallazgo.trim() || "Sin hallazgo registrado",
+    estadoSanitario: form.estadoSanitario,
+  };
+}
+
+function matchesVisit(visit: Visit, query: string) {
+  const text = query.toLowerCase().trim();
+  if (!text) return true;
+
+  return [
+    visit.id,
+    visit.centro,
+    visit.empresa,
+    visit.fecha,
+    visit.hora,
+    visit.veterinario,
+    visit.region,
+    visit.estado,
+    visit.prioridad,
+    visit.hallazgo,
+    visit.modulo,
+    visit.jaula,
+    visit.estadoSanitario,
+  ]
+    .join(" ")
+    .toLowerCase()
+    .includes(text);
+}
+
 export default function App() {
   const [ready, setReady] = useState(false);
   const [tab, setTab] = useState<TabKey>("inicio");
@@ -558,8 +1206,12 @@ export default function App() {
   const [necropsyObservations, setNecropsyObservations] = useState(
     "Registro preparado para impresión en pontón y respaldo en bitácora."
   );
-  const [selectedNecropsyPrimary, setSelectedNecropsyPrimary] = useState<string[]>(["Otras"]);
   const [selectedNecropsySecondary, setSelectedNecropsySecondary] = useState<MortalityCause[]>(["SRS", "PGD"]);
+  const [selectedSecondaryCause, setSelectedSecondaryCause] = useState<MortalityCause | null>("SRS");
+  const [selectedReportRecipients, setSelectedReportRecipients] = useState<string[]>([]);
+  const [secondaryClassificationMatrix, setSecondaryClassificationMatrix] = useState<SecondaryClassificationMatrix>(
+    getMatrixFromRecord(necropsySeed[0])
+  );
 
   useEffect(() => {
     try {
@@ -591,7 +1243,7 @@ export default function App() {
         setSamplingNote(parsed.samplingNote ?? "");
         setSelectedDiagnosis(parsed.selectedDiagnosis ?? []);
         setSelectedActions(parsed.selectedActions ?? []);
-        setChecklist(restoreChecklist(parsed.checklist, defaultChecklist, checklistIconMap, Eye));
+        setChecklist(restoreChecklist(parsed.checklist));
         setSelectedVisitTypes(parsed.selectedVisitTypes ?? ["Monitoreo de Rutina o Preventiva"]);
         setSelectedVisitObjectives(parsed.selectedVisitObjectives ?? ["Control preventivo"]);
         setSelectedVisitFrequencies(parsed.selectedVisitFrequencies ?? ["Mensual"]);
@@ -628,8 +1280,9 @@ export default function App() {
         setNecropsyInternalNote(parsed.necropsyInternalNote ?? "");
         setNecropsyPresumptiveDx(parsed.necropsyPresumptiveDx ?? "");
         setNecropsyObservations(parsed.necropsyObservations ?? "");
-        setSelectedNecropsyPrimary(parsed.selectedNecropsyPrimary ?? ["Otras"]);
         setSelectedNecropsySecondary(parsed.selectedNecropsySecondary ?? ["SRS", "PGD"]);
+        setSelectedSecondaryCause(parsed.selectedSecondaryCause ?? "SRS");
+        setSecondaryClassificationMatrix(parsed.secondaryClassificationMatrix ?? getMatrixFromRecord(parsed.necropsyRecords?.find((record: NecropsyRecord) => record.id === (parsed.selectedNecropsyId ?? necropsySeed[0].id)) ?? necropsySeed[0]));
       }
 
       if (savedDiagnosisModuleState) {
@@ -751,8 +1404,9 @@ export default function App() {
         necropsyInternalNote,
         necropsyPresumptiveDx,
         necropsyObservations,
-        selectedNecropsyPrimary,
         selectedNecropsySecondary,
+        selectedSecondaryCause,
+        secondaryClassificationMatrix,
       })
     );
   }, [
@@ -764,8 +1418,9 @@ export default function App() {
     necropsyInternalNote,
     necropsyPresumptiveDx,
     necropsyObservations,
-    selectedNecropsyPrimary,
     selectedNecropsySecondary,
+    selectedSecondaryCause,
+    secondaryClassificationMatrix,
     ready,
   ]);
 
@@ -780,6 +1435,12 @@ export default function App() {
     setSelectedModulo(selectedVisit.modulo);
     setSelectedJaula(selectedVisit.jaula);
   }, [selectedVisit]);
+
+
+  useEffect(() => {
+    if (!selectedVisit.centro) return;
+    setSelectedReportRecipients((prev) => (prev.length > 0 ? prev : [selectedVisit.centro]));
+  }, [selectedVisit.centro]);
 
   const filteredVisits = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -801,6 +1462,8 @@ export default function App() {
       completadas: visits.filter((v) => v.estado === "Completada").length,
     };
   }, [visits]);
+
+  const centros = useMemo(() => Array.from(new Set(visits.map((v) => v.centro))), [visits]);
 
   const filteredMedicalHistory = useMemo(() => {
     return medicalHistorySeed.filter((item) => {
@@ -837,15 +1500,32 @@ export default function App() {
 
   const linkedSamplingVisit = visits.find((visit) => visit.id === samplingLinkedVisitId) || null;
 
-  const recipient = useMemo(
-    () =>
-      recipientsSeed[selectedVisit.centro] || {
-        nombre: "Destino no definido",
-        cargo: "Pendiente",
-        canal: "Impresión",
-      },
-    [selectedVisit.centro]
-  );
+  const recipient = recipientsSeed[selectedVisit.centro] || {
+    nombre: "Destino no definido",
+    cargo: "Pendiente",
+    canal: "Impresión",
+  };
+
+  const availableRecipients = useMemo(() => {
+    const entries = Object.entries(recipientsSeed).map(([centro, data]) => ({
+      id: centro,
+      centro,
+      ...data,
+    }));
+
+    const currentRecipientId = selectedVisit.centro || "default";
+    const alreadyIncluded = entries.some((item) => item.id === currentRecipientId);
+
+    if (!alreadyIncluded) {
+      entries.unshift({
+        id: currentRecipientId,
+        centro: selectedVisit.centro,
+        ...recipient,
+      });
+    }
+
+    return entries;
+  }, [recipient, selectedVisit.centro]);
 
   const selectedNecropsy = useMemo(
     () => necropsyRecords.find((record) => record.id === selectedNecropsyId) || necropsyRecords[0] || necropsySeed[0],
@@ -863,7 +1543,84 @@ export default function App() {
     });
   }, [necropsyRecords, search, selectedCentro, tab]);
 
+  const secondaryCageRows = useMemo(() => {
+    const cagesFromVisits = visits
+      .filter((visit) => visit.centro === selectedCentro && visit.modulo === selectedModulo)
+      .map((visit) => visit.jaula)
+      .filter(Boolean);
+
+    const cagesFromNecropsies = necropsyRecords
+      .filter((record) => record.centro === selectedCentro && record.modulo === selectedModulo)
+      .map((record) => record.jaula)
+      .filter(Boolean);
+
+    const cagesFromMatrix = Object.values(secondaryClassificationMatrix).flatMap((cageMap) => Object.keys(cageMap || {}));
+
+    return Array.from(new Set([...cagesFromVisits, ...cagesFromNecropsies, ...cagesFromMatrix])).sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true })
+    );
+  }, [visits, necropsyRecords, selectedCentro, selectedModulo, secondaryClassificationMatrix]);
+
+  const orderedNecropsySummary = useMemo(
+    () => summarizeSecondaryMatrix(secondaryClassificationMatrix),
+    [secondaryClassificationMatrix]
+  );
+
+  const summarizedSecondaryCauses = useMemo(
+    () =>
+      orderedNecropsySummary
+        .flatMap((group) => group.items.map((item) => item.causa))
+        .filter((value, index, array) => array.indexOf(value) === index),
+    [orderedNecropsySummary]
+  );
+
+  useEffect(() => {
+    const derivedCauses = orderedNecropsySummary
+      .flatMap((group) => group.items.map((item) => item.causa))
+      .filter((value, index, array) => array.indexOf(value) === index) as MortalityCause[];
+
+    const derivedDx = derivedCauses.join(", ") || "Sin clasificación secundaria";
+    const derivedNecropsyNote = derivedDx;
+    const derivedMortalityNote =
+      orderedNecropsySummary.length > 0
+        ? orderedNecropsySummary
+            .map(
+              (group) =>
+                `Jaula ${group.jaula}: ${group.items
+                  .map((item) => `${item.cantidad} ${item.causa}`)
+                  .join(", ")}`
+            )
+            .join(" · ")
+        : "Sin clasificación secundaria";
+
+    if (necropsyPresumptiveDx !== derivedDx) setNecropsyPresumptiveDx(derivedDx);
+    if (necropsyNote !== derivedNecropsyNote) setNecropsyNote(derivedNecropsyNote);
+    if (mortalityNote !== derivedMortalityNote) setMortalityNote(derivedMortalityNote);
+    if (JSON.stringify(selectedNecropsySecondary) !== JSON.stringify(derivedCauses)) {
+      setSelectedNecropsySecondary(derivedCauses);
+    }
+  }, [orderedNecropsySummary, necropsyPresumptiveDx, necropsyNote, mortalityNote, selectedNecropsySecondary]);
+
   const generatedReport = useMemo(() => {
+    const totalNecropsias = orderedNecropsySummary.reduce(
+      (sum, group) => sum + group.items.reduce((inner, item) => inner + item.cantidad, 0),
+      0
+    );
+
+    const jaulasConRegistro = orderedNecropsySummary.length;
+
+    const resumenNecropsia =
+      orderedNecropsySummary.length > 0
+        ? orderedNecropsySummary
+            .map(
+              (group) =>
+                `Jaula ${group.jaula}: ${group.items
+                  .map((item) => `${item.cantidad} ${item.causa}`)
+                  .join(", ")}`
+            )
+            .join(" · ")
+        : "Sin registros de necropsia";
+
     return {
       centro: selectedVisit.centro,
       empresa: selectedVisit.empresa,
@@ -908,11 +1665,12 @@ export default function App() {
           : selectedDiagnosis.length > 0
           ? "En evaluación"
           : "Sin definir",
-      diagnosticoFuente: necropsyNote ? "Clínico + macroscópico" : inspectionNote ? "Clínico" : "Sin evidencia",
+      diagnosticoFuente: orderedNecropsySummary.length > 0 ? "Causa principal + cantidad por jaula" : inspectionNote ? "Clínico" : "Sin evidencia",
       acciones: selectedActions.join(", ") || "Sin selección",
       principalCausa: dominantCause,
       destinatario: recipient,
       necropsiaIntegrada: {
+        titulo: "Necropsia",
         id: selectedNecropsy.id,
         origen: selectedNecropsy.origen,
         motivo: necropsyMotive,
@@ -920,8 +1678,12 @@ export default function App() {
         hallazgoExterno: necropsyExternalNote,
         hallazgoInterno: necropsyInternalNote,
         diagnosticoPresuntivo: necropsyPresumptiveDx,
-        clasificacionPrimaria: selectedNecropsyPrimary.join(", "),
-        clasificacionSecundaria: selectedNecropsySecondary.join(", "),
+        baseRegistro: "Causa principal",
+        causasRegistradas: summarizedSecondaryCauses,
+        totalJaulas: jaulasConRegistro,
+        totalNecropsias,
+        resumen: resumenNecropsia,
+        clasificacionSecundariaDetalle: orderedNecropsySummary,
       },
     };
   }, [
@@ -955,16 +1717,43 @@ export default function App() {
     necropsyExternalNote,
     necropsyInternalNote,
     necropsyPresumptiveDx,
-    selectedNecropsyPrimary,
     selectedNecropsySecondary,
+    summarizedSecondaryCauses,
+    orderedNecropsySummary,
   ]);
 
   const toggleInArray = (value: string, setter: React.Dispatch<React.SetStateAction<string[]>>) => {
     setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
   };
 
-  const toggleNecropsySecondary = (value: MortalityCause) => {
-    setSelectedNecropsySecondary((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+  const updateSecondaryCageCount = (cause: MortalityCause, cage: string, amount: number) => {
+    const nextAmount = Math.max(0, amount);
+
+    setSecondaryClassificationMatrix((prev) => {
+      const next: SecondaryClassificationMatrix = {
+        ...prev,
+        [cause]: {
+          ...(prev[cause] || {}),
+          [cage]: nextAmount,
+        },
+      };
+
+      if (nextAmount === 0 && next[cause]) {
+        const { [cage]: _removed, ...rest } = next[cause] || {};
+        next[cause] = rest;
+        if (Object.keys(rest).length === 0) {
+          delete next[cause];
+        }
+      }
+
+      return next;
+    });
+  };
+
+  const toggleReportRecipient = (recipientId: string) => {
+    setSelectedReportRecipients((prev) =>
+      prev.includes(recipientId) ? prev.filter((item) => item !== recipientId) : [...prev, recipientId]
+    );
   };
 
   const openSamplingFromVisit = () => {
@@ -999,10 +1788,11 @@ export default function App() {
     setNecropsyMotive(record.motivo);
     setNecropsyExternalNote(record.hallazgoExterno);
     setNecropsyInternalNote(record.hallazgoInterno);
-    setNecropsyPresumptiveDx(record.diagnosticoPresuntivo);
+    setNecropsyPresumptiveDx(record.clasificacionSecundaria.join(", ") || "Sin clasificación secundaria");
     setNecropsyObservations(record.observaciones);
-    setSelectedNecropsyPrimary(record.clasificacionPrimaria);
     setSelectedNecropsySecondary(record.clasificacionSecundaria);
+    setSecondaryClassificationMatrix(getMatrixFromRecord(record));
+    setSelectedSecondaryCause(record.clasificacionSecundaria[0] ?? "PGD");
     setSelectedCentro(record.centro);
     setSelectedModulo(record.modulo);
     setSelectedJaula(record.jaula);
@@ -1099,28 +1889,39 @@ export default function App() {
 
   const saveNecropsyRecord = () => {
     const base = selectedNecropsy || necropsySeed[0];
+    const summarized = summarizeSecondaryMatrix(secondaryClassificationMatrix);
+    const activeCauses = summarized
+      .flatMap((group) => group.items.map((item) => item.causa))
+      .filter((value, index, array) => array.indexOf(value) === index) as MortalityCause[];
+
     const updated: NecropsyRecord = {
       ...base,
       seleccionado: Number(necropsySelectedCount || 0),
       motivo: necropsyMotive,
       hallazgoExterno: necropsyExternalNote.trim(),
       hallazgoInterno: necropsyInternalNote.trim(),
-      diagnosticoPresuntivo: necropsyPresumptiveDx.trim(),
+      diagnosticoPresuntivo: activeCauses.join(", ") || "Sin clasificación secundaria",
       observaciones: necropsyObservations.trim(),
-      clasificacionPrimaria: selectedNecropsyPrimary,
-      clasificacionSecundaria: selectedNecropsySecondary,
+      clasificacionSecundaria: activeCauses,
+      clasificacionSecundariaDetalle: secondaryClassificationMatrix,
       centro: selectedCentro,
       modulo: selectedModulo,
       jaula: selectedJaula,
       veterinario: selectedVisit.veterinario,
       estadoSanitario: selectedVisit.estadoSanitario,
     };
+
+    setSelectedNecropsySecondary(activeCauses);
     setNecropsyRecords((prev) => prev.map((record) => (record.id === updated.id ? updated : record)));
     setNecropsyNote(
-      `${updated.diagnosticoPresuntivo || "Sin diagnóstico"} · ${updated.clasificacionSecundaria.join(", ")}`
+      `${updated.diagnosticoPresuntivo || "Sin diagnóstico"} · ${activeCauses.join(", ") || "Sin clasificación"}`
     );
     setMortalityNote(
-      `Pontón de ensilaje · ${updated.jaula} · ${updated.clasificacionSecundaria.join(", ")} · ${updated.seleccionado} peces`
+      summarized.length > 0
+        ? summarized
+            .map((group) => `Jaula ${group.jaula}: ${group.items.map((item) => `${item.cantidad} ${item.causa}`).join(", ")}`)
+            .join(" · ")
+        : `Pontón de ensilaje · ${updated.jaula} · Sin clasificación secundaria`
     );
     setToast(`Necropsia ${updated.id} actualizada`);
   };
@@ -1189,8 +1990,9 @@ export default function App() {
     const record = selectedNecropsy;
     const payload = {
       necropsia: record,
-      clasificacionPrimaria: selectedNecropsyPrimary,
-      clasificacionSecundaria: selectedNecropsySecondary,
+      clasificacionSecundaria: summarizedSecondaryCauses,
+      clasificacionSecundariaDetalle: secondaryClassificationMatrix,
+      resumenPorJaula: orderedNecropsySummary,
       fechaExportacion: new Date().toISOString(),
     };
 
@@ -1207,7 +2009,13 @@ export default function App() {
   };
 
   const sendToTeams = () => {
-    setToast(`Reporte de ${selectedVisit.id} marcado como enviado`);
+    const recipientsToSend = availableRecipients.filter((item) => selectedReportRecipients.includes(item.id));
+    const destinationLabel =
+      recipientsToSend.length > 0
+        ? recipientsToSend.map((item) => item.nombre).join(", ")
+        : "sin destinatarios seleccionados";
+
+    setToast(`Informe ${selectedVisit.id} enviado a ${destinationLabel}`);
   };
 
   const act = (message: string) => setToast(message);
@@ -1230,42 +2038,202 @@ export default function App() {
 
       <main className="mx-auto max-w-md px-4 pb-28 pt-4">
         {tab === "inicio" && (
-          <InicioModule
-            stats={stats}
-            openVisit={openVisit}
-            visits={visits}
-            SearchBox={SearchBox}
-            search={search}
-            setSearch={setSearch}
-            MetricCard={MetricCard}
-            offline={offline}
-            AccordionSection={AccordionSection}
-            setTab={setTab}
-            openStandaloneSampling={openStandaloneSampling}
-            hydrateNecropsyEditor={hydrateNecropsyEditor}
-            selectedNecropsy={selectedNecropsy}
-            placeholderModules={placeholderModules}
-            alertsSeed={alertsSeed}
-            act={act}
-            StatusBadge={StatusBadge}
-          />
+          <div className="space-y-4">
+            <section className="overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0F6CBD] to-[#115EA3] p-5 text-white shadow-xl">
+              {/* <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Flujo de terreno</p> */}
+              {/* <h2 className="mt-2 text-2xl font-semibold leading-tight">
+                Centro → módulo → jaula → historial → registro → pontón de ensilaje → mortalidades → necropsias → reporte
+              </h2> */}
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
+                  <p className="text-sm text-white/70">Pendientes</p>
+                  <p className="mt-2 text-3xl font-semibold">{stats.pendientes}</p>
+                </div>
+                <div className="rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
+                  <p className="text-sm text-white/70">En curso</p>
+                  <p className="mt-2 text-3xl font-semibold">{stats.enCurso}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => openVisit(visits[0])}
+                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-white font-semibold text-[#0F6CBD]"
+              >
+                <ClipboardCheck className="h-5 w-5" />
+                Iniciar diagnóstico de siguiente visita
+              </button>
+            </section>
+
+            <SearchBox value={search} onChange={setSearch} onClear={() => setSearch("")} />
+
+            <section className="grid grid-cols-2 gap-3">
+              <MetricCard label="Completadas" value={stats.completadas} icon={CheckCircle2} tone="emerald" />
+              <MetricCard label="Sin señal" value={offline ? "Activo" : "No"} icon={WifiOff} tone="slate" />
+            </section>
+
+            <AccordionSection
+              title="Módulos del sistema"
+              subtitle="Los módulos se abren desde inicio. Muestreo y necropsias también pueden abrirse desde una visita activa."
+              defaultOpen
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setTab("registro")}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-[#0F6CBD] hover:bg-[#E8F3FC]"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F3FC] text-[#0F6CBD]">
+                    <ClipboardPenLine className="h-5 w-5" />
+                  </div>
+                  <p className="mt-3 text-sm font-semibold text-slate-900">Módulo visita</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Registro clínico y sanitario de la visita activa.
+                  </p>
+                </button>
+
+                <button
+                  onClick={openStandaloneSampling}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-emerald-600 hover:bg-emerald-50"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                    <FlaskConical className="h-5 w-5" />
+                  </div>
+                  <p className="mt-3 text-sm font-semibold text-slate-900">Módulo muestreo</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Toma de muestras independiente o vinculada a visita.
+                  </p>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setTab("necropsias");
+                    hydrateNecropsyEditor(selectedNecropsy);
+                  }}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-rose-600 hover:bg-rose-50"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-700">
+                    <Stethoscope className="h-5 w-5" />
+                  </div>
+                  <p className="mt-3 text-sm font-semibold text-slate-900">Módulo necropsias</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Pontón de ensilaje → mortalidades → clasificación → impresión.
+                  </p>
+                </button>
+
+                {/* <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                    <PackageOpen className="h-5 w-5" />
+                  </div>
+                  <p className="mt-3 text-sm font-semibold text-slate-900">Bitácora pontón</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Respaldo documental conectado al módulo de necropsias.
+                  </p>
+                </div> */}
+              </div>
+
+              <div className="mt-3 space-y-3">
+                {placeholderModules.map((module) => (
+                  <div key={module.title} className="rounded-2xl bg-slate-50 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{module.title}</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">{module.description}</p>
+                      </div>
+                      <p className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500">
+                        Próximamente
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </AccordionSection>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <SectionHeader title="Alertas de hoy" subtitle="Prioridad clínica" />
+              <div className="space-y-3">
+                {alertsSeed.map((alert) => (
+                  <button
+                    key={alert.titulo}
+                    onClick={() => act(`${alert.titulo}: ${alert.descripcion}`)}
+                    className="block w-full rounded-2xl bg-slate-50 p-4 text-left"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{alert.titulo}</p>
+                        <p className="mt-1 text-sm text-slate-500">{alert.descripcion}</p>
+                      </div>
+                      <StatusBadge value={alert.severidad} />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+
+          </div>
         )}
 
         {tab === "visitas" && (
-          <VisitasModule
-            openCreateModal={openCreateModal}
-            filter={filter}
-            setFilter={setFilter}
-            cn={cn}
-            SearchBox={SearchBox}
-            search={search}
-            setSearch={setSearch}
-            filteredVisits={filteredVisits}
-            VisitCard={VisitCard}
-            openVisit={openVisit}
-            openEditModal={openEditModal}
-            deleteVisit={deleteVisit}
-          />
+          <div className="space-y-4">
+            <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">Visitas</h2>
+                  <p className="mt-1 text-sm text-slate-500">Agenda simple con centro, módulo, jaula y estado.</p>
+                </div>
+                <button
+                  onClick={openCreateModal}
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#0F6CBD] text-white"
+                >
+                  <Plus className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {(["Todas", "Hoy", "Pendientes", "En progreso", "Completadas"] as FilterKey[]).map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => setFilter(item)}
+                    className={cn(
+                      "h-10 rounded-2xl border px-3 text-sm font-medium",
+                      filter === item
+                        ? "border-[#0F6CBD] bg-[#E8F3FC] text-[#0F6CBD]"
+                        : "border-slate-200 bg-white text-slate-700"
+                    )}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <SearchBox value={search} onChange={setSearch} onClear={() => setSearch("")} />
+
+            <div className="space-y-3">
+              {filteredVisits.length ? (
+                filteredVisits.map((visit) => (
+                  <VisitCard
+                    key={visit.id}
+                    visit={visit}
+                    onOpen={openVisit}
+                    onEdit={openEditModal}
+                    onDelete={deleteVisit}
+                  />
+                ))
+              ) : (
+                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-6 text-center shadow-sm">
+                  <p className="text-sm font-medium text-slate-800">No hay visitas para este filtro</p>
+                  <button
+                    onClick={openCreateModal}
+                    className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] px-4 text-sm font-semibold text-white"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Crear visita
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {tab === "registro" && (
@@ -1812,242 +2780,360 @@ export default function App() {
           <div className="space-y-4">
             <section className="rounded-[28px] bg-gradient-to-br from-rose-600 to-rose-700 p-5 text-white shadow-xl">
               <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Pontón de ensilaje</p>
-              <h2 className="mt-2 text-xl font-semibold">Mortalidades → Módulo necropsias</h2>
+              <h2 className="mt-2 text-xl font-semibold">Necropsias</h2>
               <p className="mt-2 text-sm text-white/80">
-                Selección de peces, clasificación, hallazgos y salida documental imprimible.
+                Registro simple: seleccionar causa principal y marcar cantidad por jaula.
               </p>
             </section>
 
-            <SearchBox
-              value={search}
-              onChange={setSearch}
-              onClear={() => setSearch("")}
-              placeholder="Buscar necropsia, centro, módulo o jaula"
-            />
-
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <SectionHeader title="Bandeja de mortalidades / necropsias" subtitle="Registros del pontón" />
-              <div className="space-y-3">
-                {necropsyForContext.map((record) => (
-                  <button
-                    key={record.id}
-                    onClick={() => {
-                      setSelectedNecropsyId(record.id);
-                      hydrateNecropsyEditor(record);
-                    }}
-                    className={cn(
-                      "block w-full rounded-2xl border p-4 text-left",
-                      selectedNecropsyId === record.id
-                        ? "border-rose-300 bg-rose-50"
-                        : "border-slate-200 bg-slate-50"
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">{record.id}</p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          {record.centro} · {record.modulo} · {record.jaula}
-                        </p>
-                        <p className="mt-2 text-xs text-slate-500">
-                          Mortalidad día: {record.mortalidadDia} · Tratamientos: {record.nroTratamientos} · Baños:{" "}
-                          {record.nroBanos}
-                        </p>
-                      </div>
-                      <StatusBadge value={record.estadoSanitario} />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <section className="grid grid-cols-2 gap-3">
-              <MetricCard label="Mortalidad día" value={selectedNecropsy.mortalidadDia} icon={Stethoscope} tone="amber" />
-              <MetricCard
-                label="Mortalidad mes"
-                value={`${selectedNecropsy.mortalidadMesPct}%`}
-                icon={ChartNoAxesCombined}
-                tone="blue"
+              <SectionHeader
+                title="Causa principal"
+                subtitle="Selecciona la causa y luego marca la cantidad en cada jaula"
               />
-              <MetricCard
-                label="Mortalidad acumulada"
-                value={`${selectedNecropsy.mortalidadAcumuladaPct}%`}
-                icon={ClipboardList}
-                tone="amber"
-              />
-              <MetricCard label="N° tratamientos" value={selectedNecropsy.nroTratamientos} icon={Pill} tone="emerald" />
-            </section>
-
-            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <SectionHeader title="Contexto del pontón" subtitle="Centro, módulo, jaula y estatus" />
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl bg-slate-50 p-3">
-                  <p className="text-xs text-slate-500">Centro</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{selectedCentro}</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-3">
-                  <p className="text-xs text-slate-500">Módulo / Jaula</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">
-                    {selectedModulo} · {selectedJaula}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-3">
-                  <p className="text-xs text-slate-500">Veterinario</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{selectedVisit.veterinario}</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-3">
-                  <p className="text-xs text-slate-500">Estado sanitario</p>
-                  <div className="mt-1">
-                    <StatusBadge value={selectedVisit.estadoSanitario} />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <AccordionSection title="Selección para necropsia" subtitle="Peces a revisar" defaultOpen>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm font-medium text-slate-700">N° seleccionados</label>
-                  <input
-                    value={necropsySelectedCount}
-                    onChange={(e) => setNecropsySelectedCount(e.target.value)}
-                    className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-600 focus:bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700">Motivo</label>
-                  <select
-                    value={necropsyMotive}
-                    onChange={(e) => setNecropsyMotive(e.target.value as NecropsyRecord["motivo"])}
-                    className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-600 focus:bg-white"
-                  >
-                    {necropsyMotiveOptions.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="mt-3 rounded-2xl bg-slate-50 p-3">
-                <p className="text-sm text-slate-700">
-                  Origen: <span className="font-semibold">{selectedNecropsy.origen}</span>
-                </p>
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="Hallazgos macroscópicos" subtitle="Externo e interno">
-              <div className="space-y-3">
-                <textarea
-                  value={necropsyExternalNote}
-                  onChange={(e) => setNecropsyExternalNote(e.target.value)}
-                  className="min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-rose-600 focus:bg-white"
-                  placeholder="Hallazgos externos"
-                />
-                <textarea
-                  value={necropsyInternalNote}
-                  onChange={(e) => setNecropsyInternalNote(e.target.value)}
-                  className="min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-rose-600 focus:bg-white"
-                  placeholder="Hallazgos internos / órganos / hemorragias / necrosis"
-                />
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="Diagnóstico presuntivo" subtitle="Resumen clínico">
-              <input
-                value={necropsyPresumptiveDx}
-                onChange={(e) => setNecropsyPresumptiveDx(e.target.value)}
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-600 focus:bg-white"
-                placeholder="SRS, PGD, HSMI u otro"
-              />
-            </AccordionSection>
-
-            <AccordionSection title="Clasificación primaria" subtitle="Tabilla R-Sal-11">
               <div className="grid grid-cols-2 gap-2">
-                {mortalityPrimaryOptions.map((item) => (
+                {([
+                  "PGD",
+                  "HSMI",
+                  "SRS",
+                  "TENA",
+                  "Rezago",
+                  "ONI",
+                  "Deforme",
+                  "Daño físico",
+                  "BKD",
+                  "Otras",
+                ] as MortalityCause[]).map((item) => (
                   <ActionChip
                     key={item}
                     label={item}
-                    active={selectedNecropsyPrimary.includes(item)}
-                    onClick={() => toggleInArray(item, setSelectedNecropsyPrimary)}
+                    active={selectedSecondaryCause === item}
+                    onClick={() => setSelectedSecondaryCause(item)}
                   />
                 ))}
               </div>
-            </AccordionSection>
-
-            <AccordionSection title="Clasificación secundaria" subtitle="Causas sanitarias">
-              <div className="grid grid-cols-2 gap-2">
-                {(["PGD", "HSMI", "SRS", "TENA", "Rezago", "ONI", "Deforme", "Daño físico", "BKD", "Otras"] as MortalityCause[]).map(
-                  (item) => (
-                    <ActionChip
-                      key={item}
-                      label={item}
-                      active={selectedNecropsySecondary.includes(item)}
-                      onClick={() => toggleNecropsySecondary(item)}
-                    />
-                  )
-                )}
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="Observaciones y salida documental" subtitle="Bitácora / impresión">
-              <textarea
-                value={necropsyObservations}
-                onChange={(e) => setNecropsyObservations(e.target.value)}
-                className="min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-rose-600 focus:bg-white"
-                placeholder="Notas para bitácora del pontón, impresión y firma"
-              />
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <button
-                  onClick={saveNecropsyRecord}
-                  className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-rose-600 text-sm font-semibold text-white"
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  Guardar necropsia
-                </button>
-                <button
-                  onClick={exportNecropsySheet}
-                  className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
-                >
-                  <Printer className="h-4 w-4" />
-                  Exportar tabilla
-                </button>
-              </div>
-            </AccordionSection>
+            </section>
 
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <SectionHeader title="Resumen rápido del registro" subtitle="Lo que quedará integrado al mockup" />
-              <div className="space-y-2 text-sm text-slate-700">
-                <p>
-                  <span className="font-semibold">ID:</span> {selectedNecropsy.id}
-                </p>
-                <p>
-                  <span className="font-semibold">Pontón:</span> {selectedNecropsy.origen}
-                </p>
-                <p>
-                  <span className="font-semibold">Mortalidades:</span> {selectedNecropsy.mortalidadDia} día /{" "}
-                  {selectedNecropsy.mortalidadMesPct}% mes / {selectedNecropsy.mortalidadAcumuladaPct}% acc.
-                </p>
-                <p>
-                  <span className="font-semibold">Clasificación secundaria:</span>{" "}
-                  {selectedNecropsySecondary.join(", ") || "Sin selección"}
-                </p>
+              <SectionHeader
+                title="Cantidad por jaula"
+                subtitle={
+                  selectedSecondaryCause
+                    ? `Causa activa: ${selectedSecondaryCause}`
+                    : "Primero selecciona una causa principal"
+                }
+              />
+
+              {selectedSecondaryCause ? (
+                secondaryCageRows.length > 0 ? (
+                  <div className="space-y-3">
+                    {secondaryCageRows.map((row) => {
+                      const value = secondaryClassificationMatrix[selectedSecondaryCause]?.[row] ?? 0;
+
+                      return (
+                        <div key={`${selectedSecondaryCause}-${row}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                          <div className="mb-3 flex items-center justify-between gap-3">
+                            <p className="text-base font-semibold text-slate-900">Jaula {row}</p>
+                            <span className="rounded-full bg-white px-3 py-1 text-base font-bold text-slate-900 shadow-sm">
+                              {value}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2">
+                            {[0, 1, 2, 3, 4, 5].map((n) => (
+                              <button
+                                key={n}
+                                onClick={() => updateSecondaryCageCount(selectedSecondaryCause, row, n)}
+                                className={cn(
+                                  "h-16 rounded-2xl border text-2xl font-bold transition",
+                                  value === n
+                                    ? "border-rose-600 bg-rose-600 text-white"
+                                    : "border-slate-200 bg-white text-slate-800"
+                                )}
+                              >
+                                {n}
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="mt-2 grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => updateSecondaryCageCount(selectedSecondaryCause, row, Math.max(0, value - 1))}
+                              className="h-14 rounded-2xl border border-slate-200 bg-white text-xl font-bold text-slate-700"
+                            >
+                              -1
+                            </button>
+                            <button
+                              onClick={() => updateSecondaryCageCount(selectedSecondaryCause, row, value + 1)}
+                              className="h-14 rounded-2xl border border-slate-200 bg-white text-xl font-bold text-slate-700"
+                            >
+                              +1
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                    No hay jaulas disponibles para este centro o módulo.
+                  </div>
+                )
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                  Selecciona una causa principal para comenzar.
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <SectionHeader title="Resumen por jaula" subtitle="Salida ordenada y concisa" />
+              <div className="space-y-3">
+                {orderedNecropsySummary.length > 0 ? (
+                  orderedNecropsySummary.map(({ jaula, items }) => (
+                    <div key={jaula} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-base font-semibold text-slate-900">Jaula {jaula}</p>
+                      <div className="mt-2 space-y-1">
+                        {items.map((item) => (
+                          <p key={`${jaula}-${item.causa}`} className="text-sm text-slate-700">
+                            <span className="font-semibold">{item.cantidad}</span> {item.causa.toLowerCase()}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                    Aún no hay cantidades registradas.
+                  </div>
+                )}
               </div>
             </section>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={saveNecropsyRecord}
+                className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-rose-600 text-sm font-semibold text-white"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Guardar
+              </button>
+              <button
+                onClick={exportNecropsySheet}
+                className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
+              >
+                <Printer className="h-4 w-4" />
+                Exportar
+              </button>
+            </div>
           </div>
         )}
 
         {tab === "resumen" && (
-          <ResumenModule
-            selectedVisit={selectedVisit}
-            selectedModulo={selectedModulo}
-            selectedJaula={selectedJaula}
-            AccordionSection={AccordionSection}
-            generatedReport={generatedReport}
-            aggregatedByCause={aggregatedByCause}
-            recipient={recipient}
-            exportSummary={exportSummary}
-            sendToTeams={sendToTeams}
-          />
+          <div className="space-y-4">
+            <section className="rounded-[28px] bg-gradient-to-br from-slate-900 to-slate-700 p-5 text-white shadow-xl">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Informe integrado</p>
+              <h2 className="mt-2 text-xl font-semibold">{selectedVisit.id}</h2>
+              <p className="mt-2 text-sm text-white/80">
+                {selectedVisit.centro} · {selectedModulo} · {selectedJaula}
+              </p>
+            </section>
+
+            <AccordionSection title="Visita" subtitle="Datos generales" defaultOpen>
+              <div className="grid grid-cols-2 gap-3 text-sm text-slate-700">
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Centro</p>
+                  <p className="mt-1 font-semibold text-slate-900">{generatedReport.centro}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Empresa</p>
+                  <p className="mt-1 font-semibold text-slate-900">{generatedReport.empresa}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Fecha y hora</p>
+                  <p className="mt-1 font-semibold text-slate-900">
+                    {generatedReport.fecha} · {generatedReport.hora}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Veterinario</p>
+                  <p className="mt-1 font-semibold text-slate-900">{generatedReport.veterinario}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Módulo / Jaula</p>
+                  <p className="mt-1 font-semibold text-slate-900">
+                    {generatedReport.modulo} · {generatedReport.jaula}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Estado sanitario</p>
+                  <div className="mt-1">
+                    <StatusBadge value={generatedReport.estadoSanitario} />
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Tipo de visita</p>
+                  <p className="mt-1 text-slate-900">{generatedReport.tipoVisita}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Objetivo</p>
+                  <p className="mt-1 text-slate-900">{generatedReport.objetivoVisita}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Frecuencia</p>
+                  <p className="mt-1 text-slate-900">{generatedReport.frecuenciaVisita}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Actividades</p>
+                  <p className="mt-1 text-slate-900">{generatedReport.actividadesVisita}</p>
+                </div>
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Diagnóstico" subtitle="Resumen clínico y acciones">
+              <div className="space-y-3 text-sm text-slate-700">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">Diagnóstico</p>
+                    <p className="mt-1 font-semibold text-slate-900">{generatedReport.diagnostico}</p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">Estado</p>
+                    <p className="mt-1 font-semibold text-slate-900">{generatedReport.diagnosticoEstado}</p>
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Fuente diagnóstica</p>
+                  <p className="mt-1 text-slate-900">{generatedReport.diagnosticoFuente}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Acciones</p>
+                  <p className="mt-1 text-slate-900">{generatedReport.acciones}</p>
+                </div>
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Muestreo" subtitle="Contexto y selección">
+              <div className="space-y-3 text-sm text-slate-700">
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Contexto</p>
+                  <p className="mt-1 text-slate-900">{generatedReport.contextoMuestreo}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">Categoría</p>
+                    <p className="mt-1 text-slate-900">{generatedReport.categoriaMuestreo}</p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">Objetivo</p>
+                    <p className="mt-1 text-slate-900">{generatedReport.objetivoMuestreo}</p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">Enfermedad</p>
+                    <p className="mt-1 text-slate-900">{generatedReport.enfermedadMuestreo}</p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">Tipo de muestra</p>
+                    <p className="mt-1 text-slate-900">{generatedReport.tipoMuestra}</p>
+                  </div>
+                </div>
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Necropsia" subtitle="Tabla de necropsia al final">
+              <div className="space-y-3 text-sm text-slate-700">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">Registro base</p>
+                    <p className="mt-1 font-semibold text-slate-900">{generatedReport.necropsiaIntegrada.baseRegistro}</p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">Causas registradas</p>
+                    <p className="mt-1 font-semibold text-slate-900">
+                      {generatedReport.necropsiaIntegrada.causasRegistradas.join(", ") || "Sin registros"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                  {generatedReport.necropsiaIntegrada.clasificacionSecundariaDetalle.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200 text-sm">
+                        <thead className="bg-slate-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700">Jaula</th>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700">Causa</th>
+                            <th className="px-4 py-3 text-right font-semibold text-slate-700">Cantidad</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 bg-white">
+                          {generatedReport.necropsiaIntegrada.clasificacionSecundariaDetalle.flatMap((group) =>
+                            group.items.map((item) => (
+                              <tr key={`${group.jaula}-${item.causa}`}>
+                                <td className="px-4 py-3 text-slate-900">{group.jaula}</td>
+                                <td className="px-4 py-3 text-slate-700">{item.causa}</td>
+                                <td className="px-4 py-3 text-right font-semibold text-slate-900">{item.cantidad}</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl bg-slate-50 p-3">
+                      <p>No hay registros de necropsia por jaula.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Destinatarios y envío" subtitle="Selecciona varios destinatarios y envía">
+              <div className="space-y-3">
+                {availableRecipients.map((item) => {
+                  const checked = selectedReportRecipients.includes(item.id);
+                  return (
+                    <label
+                      key={item.id}
+                      className={cn(
+                        "flex items-start gap-3 rounded-2xl border p-4 transition",
+                        checked ? "border-[#0F6CBD] bg-[#E8F3FC]" : "border-slate-200 bg-white"
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleReportRecipient(item.id)}
+                        className="mt-1 h-4 w-4 rounded border-slate-300"
+                      />
+                      <div className="min-w-0 flex-1 text-sm text-slate-700">
+                        <p className="font-semibold text-slate-900">{item.nombre}</p>
+                        <p>{item.cargo}</p>
+                        <p className="text-slate-500">{item.centro} · {item.canal}</p>
+                      </div>
+                    </label>
+                  );
+                })}
+
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <button
+                    onClick={exportSummary}
+                    className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
+                  >
+                    <Download className="h-4 w-4" />
+                    Exportar
+                  </button>
+                  <button
+                    onClick={sendToTeams}
+                    className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] text-sm font-semibold text-white"
+                  >
+                    <Send className="h-4 w-4" />
+                    Enviar
+                  </button>
+                </div>
+              </div>
+            </AccordionSection>
+          </div>
         )}
       </main>
 
