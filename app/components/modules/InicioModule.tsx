@@ -1,6 +1,6 @@
 import React from "react";
 import { CheckCircle2, ClipboardCheck, ClipboardPenLine, FlaskConical, Stethoscope, WifiOff } from "lucide-react";
-import type { TabKey, Visit } from "../../lib/types";
+import type { NecropsyRecord, TabKey, Visit } from "../../lib/types";
 
 type InicioModuleProps = {
   stats: { pendientes: number; enCurso: number; completadas: number };
@@ -9,7 +9,12 @@ type InicioModuleProps = {
   SearchBox: React.ComponentType<{ value: string; onChange: (value: string) => void; onClear: () => void }>;
   search: string;
   setSearch: React.Dispatch<React.SetStateAction<string>>;
-  MetricCard: React.ComponentType<{ label: string; value: string | number; icon: React.ElementType; tone?: string }>;
+  MetricCard: React.ComponentType<{
+    label: string;
+    value: string | number;
+    icon: React.ElementType;
+    tone?: "blue" | "emerald" | "amber" | "slate";
+  }>;
   offline: boolean;
   AccordionSection: React.ComponentType<{
     title: string;
@@ -19,8 +24,8 @@ type InicioModuleProps = {
   }>;
   setTab: (tab: TabKey) => void;
   openStandaloneSampling: () => void;
-  hydrateNecropsyEditor: (record: unknown) => void;
-  selectedNecropsy: unknown;
+  hydrateNecropsyEditor: (record: NecropsyRecord) => void;
+  selectedNecropsy: NecropsyRecord;
   placeholderModules: Array<{ title: string; description: string }>;
   alertsSeed: ReadonlyArray<{ titulo: string; descripcion: string; severidad: string }>;
   act: (message: string) => void;
