@@ -1093,18 +1093,18 @@ const placeholderModules = [
   // },
   {
     title: "Módulo análisis de laboratorio",
-    description:
-      "Descripción: Los análisis de laboratorio son fundamentales para complementar el diagnóstico clínico en terreno y tomar decisiones informadas respecto a la salud de los peces, la efectividad de tratamientos y la condición sanitaria del entorno.",
+    // description:
+    //   "Descripción: Los análisis de laboratorio son fundamentales para complementar el diagnóstico clínico en terreno y tomar decisiones informadas respecto a la salud de los peces, la efectividad de tratamientos y la condición sanitaria del entorno.",
   },
   {
     title: "Módulo PMV",
-    description:
-      "Descripción: La prescripción médico veterinaria es una herramienta clave para asegurar un uso responsable de fármacos, cumplir con la normativa vigente y proteger tanto la salud animal como la inocuidad alimentaria.",
+    // description:
+    //   "Descripción: La prescripción médico veterinaria es una herramienta clave para asegurar un uso responsable de fármacos, cumplir con la normativa vigente y proteger tanto la salud animal como la inocuidad alimentaria.",
   },
   {
     title: "Módulo trazabilidad clínica",
-    description:
-      "Descripción: La trazabilidad clínica permite vincular cada acción sanitaria, tratamiento, evento clínico o decisión productiva con el grupo o unidad de peces afectada.",
+    // description:
+    //   "Descripción: La trazabilidad clínica permite vincular cada acción sanitaria, tratamiento, evento clínico o decisión productiva con el grupo o unidad de peces afectada.",
   },
 ];
 
@@ -1146,6 +1146,10 @@ const necropsyMotiveOptions: NecropsyRecord["motivo"][] = [
   "Brote",
   "Seguimiento tratamiento",
 ];
+
+function formatJaula(jaula: string) {
+  return jaula?.split("-").pop() || jaula;
+}
 
 const necropsySeed: NecropsyRecord[] = [
   {
@@ -3181,7 +3185,7 @@ export default function App() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">{module.title}</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-600">{module.description}</p>
+                        {/* <p className="mt-2 text-sm leading-6 text-slate-600">{module.description}</p> */}
                       </div>
                       <p className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500">
                         Próximamente
@@ -3390,7 +3394,7 @@ export default function App() {
               </div>
             </AccordionSection>
 
-            <ContextSelectorsCard
+            {/* <ContextSelectorsCard
               title="Contexto del registro"
               subtitle="Cada dato del módulo queda ligado al centro, módulo y jaula seleccionados"
               selectedCentro={selectedCentro}
@@ -3402,7 +3406,7 @@ export default function App() {
               onCentroChange={handleCentroChange}
               onModuloChange={handleModuloChange}
               onJaulaChange={setSelectedJaula}
-            />
+            /> */}
 
 
 
@@ -3633,15 +3637,15 @@ export default function App() {
                 <div>
                   <p className="text-[11px] uppercase tracking-[0.18em] text-white/70"></p>
                   <h2 className="mt-2 text-xl font-semibold">Módulo muestreo</h2>
-                  <p className="mt-2 text-sm text-white/80">
+                  {/* <p className="mt-2 text-sm text-white/80">
                     Descripción: En la acuicultura, cuando un médico veterinario realiza una salida a terreno para la toma de muestras, estas pueden clasificarse según su objetivo y el contexto operativo.
-                  </p>
+                  </p> */}
                 </div>
                 <FlaskConical className="h-8 w-8 text-white" />
               </div>
 
               <div className="mt-4 rounded-2xl bg-white/10 p-4 text-sm">
-                <p className="font-semibold text-white">Contexto del muestreo</p>
+                {/* <p className="font-semibold text-white">Contexto del muestreo</p> */}
                 {samplingContextMode === "visita" && linkedSamplingVisit ? (
                   <div className="mt-2 space-y-1 text-white/85">
                     <p>Asociado a visita {linkedSamplingVisit.id}</p>
@@ -3650,7 +3654,7 @@ export default function App() {
                   </div>
                 ) : (
                   <p className="mt-2 text-white/85">
-                    Registro abierto desde inicio como muestreo independiente. Puede vincularse luego a la visita activa.
+                    Muestreo Independiente.
                   </p>
                 )}
               </div>
@@ -3673,7 +3677,7 @@ export default function App() {
               </div>
             </section>
 
-            <ContextSelectorsCard
+            {/* <ContextSelectorsCard
               title="Contexto del muestreo"
               subtitle="Las opciones de muestreo quedan ligadas a la jaula seleccionada"
               selectedCentro={selectedCentro}
@@ -3685,11 +3689,11 @@ export default function App() {
               onCentroChange={handleCentroChange}
               onModuloChange={handleModuloChange}
               onJaulaChange={setSelectedJaula}
-            />
+            /> */}
 
             <AccordionSection
               title="Módulo muestreo"
-              subtitle="Descripción: En la acuicultura, cuando un médico veterinario realiza una salida a terreno para la toma de muestras, estas pueden clasificarse según su objetivo y el contexto operativo."
+              // subtitle="Descripción: En la acuicultura, cuando un médico veterinario realiza una salida a terreno para la toma de muestras, estas pueden clasificarse según su objetivo y el contexto operativo."
               defaultOpen
             >
               {/* <div className="rounded-2xl bg-emerald-50 p-4 text-sm text-slate-700">
@@ -3793,97 +3797,24 @@ export default function App() {
           </div>
         )}
 
+
+
         {tab === "necropsias" && (
           <div className="space-y-4">
+
             <section className="rounded-[28px] bg-gradient-to-br from-rose-600 to-rose-700 p-5 text-white shadow-xl">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Pontón de ensilaje</p>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">
+                Pontón de ensilaje
+              </p>
               <h2 className="mt-2 text-xl font-semibold">Necropsias</h2>
               <p className="mt-2 text-sm text-white/80">
                 Registro rápido por centro, módulo y jaulas. Marca una causa principal y asigna cantidades por cada jaula del módulo.
               </p>
             </section>
-            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <SectionHeader
-                title="Centro y módulo"
-                subtitle="Cada centro puede tener varios módulos y cada módulo varias jaulas"
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm font-medium text-slate-700">Centro</label>
-                  <select
-                    value={selectedCentro}
-                    onChange={(e) => {
-                      const centro = e.target.value;
-                      const nextModules = Array.from(
-                        new Set(
-                          [...visits, ...necropsyRecords]
-                            .filter((item) => item.centro === centro)
-                            .map((item) => item.modulo)
-                            .filter(Boolean)
-                        )
-                      ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-                      const nextModulo = nextModules[0] || "";
-                      const nextJaulas = Array.from(
-                        new Set(
-                          [...visits, ...necropsyRecords]
-                            .filter((item) => item.centro === centro && item.modulo === nextModulo)
-                            .map((item) => item.jaula)
-                            .filter(Boolean)
-                        )
-                      ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-                      setSelectedCentro(centro);
-                      setSelectedModulo(nextModulo);
-                      setSelectedJaula(nextJaulas[0] || "");
-                    }}
-                    className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-600 focus:bg-white"
-                  >
-                    {necropsyCenterOptions.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
-                </div>
 
-                <div>
-                  <label className="text-sm font-medium text-slate-700">Módulo</label>
-                  <select
-                    value={selectedModulo}
-                    onChange={(e) => {
-                      const modulo = e.target.value;
-                      const nextJaulas = Array.from(
-                        new Set(
-                          [...visits, ...necropsyRecords]
-                            .filter((item) => item.centro === selectedCentro && item.modulo === modulo)
-                            .map((item) => item.jaula)
-                            .filter(Boolean)
-                        )
-                      ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-                      setSelectedModulo(modulo);
-                      setSelectedJaula(nextJaulas[0] || "");
-                    }}
-                    className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-rose-600 focus:bg-white"
-                  >
-                    {necropsyModuleOptions.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="mt-3 rounded-2xl bg-slate-50 p-3 text-sm text-slate-700">
-                {secondaryCageRows.length > 0
-                  ? `${selectedCentro} · ${selectedModulo} · ${secondaryCageRows.length} jaula(s) disponibles`
-                  : "No hay jaulas disponibles para el centro y módulo seleccionados."}
-              </div>
-            </section>
-
+            {/* ================= CAUSA ================= */}
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <SectionHeader
-                title="Causa principal"
-                subtitle="Ejemplo: PGD 3 en jaula 1, 4 en jaula 2, 5 en jaula 3; luego repites con la siguiente causa"
-              />
+              <SectionHeader title="Causa principal" />
               <div className="grid grid-cols-2 gap-2">
                 {([
                   "PGD",
@@ -3907,24 +3838,13 @@ export default function App() {
               </div>
             </section>
 
-
-
-            {/* <section className="rounded-3xl border border-rose-200 bg-rose-50 p-4 shadow-sm">
-              <div className="space-y-1 text-sm text-rose-900">
-                <p className="font-semibold">Flujo rápido</p>
-                <p>1. Elige centro y módulo.</p>
-                <p>2. Selecciona una causa principal.</p>
-                <p>3. Marca la cantidad en cada jaula del módulo.</p>
-                <p>4. Cambia a la siguiente causa y continúa.</p>
-              </div>
-            </section> */}
-
+            {/* ================= REGISTRO ================= */}
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
               <SectionHeader
                 title="Registro rápido"
                 subtitle={
                   selectedSecondaryCause && selectedJaula
-                    ? `Causa activa: ${selectedSecondaryCause} · Jaula activa: ${selectedJaula}`
+                    ? `Causa activa: ${selectedSecondaryCause} · Jaula activa: ${formatJaula(selectedJaula)}`
                     : "Selecciona causa principal y jaula"
                 }
               />
@@ -3932,26 +3852,33 @@ export default function App() {
               {selectedSecondaryCause ? (
                 secondaryCageRows.length > 0 ? (
                   <div className="space-y-4">
+
+                    {/* 🔹 SELECTOR JAULAS */}
                     <div>
-                      <p className="text-sm font-medium text-slate-700">Jaulas del módulo</p>
+                      <p className="text-sm font-medium text-slate-700">
+                        Jaulas del módulo
+                      </p>
+
                       <div className="mt-2 grid grid-cols-3 gap-2">
                         {secondaryCageRows.map((row) => {
-                          const cageValue = secondaryClassificationMatrix[selectedSecondaryCause]?.[row] ?? 0;
+                          const cageValue =
+                            secondaryClassificationMatrix[selectedSecondaryCause]?.[row] ?? 0;
+
                           const active = selectedJaula === row;
 
                           return (
                             <button
                               key={`selector-${row}`}
                               onClick={() => setSelectedJaula(row)}
-                              className={cn(
-                                "rounded-2xl border px-3 py-3 text-left transition",
-                                active
+                              className={`rounded-2xl border px-3 py-3 text-left transition ${active
                                   ? "border-rose-600 bg-rose-600 text-white"
                                   : "border-slate-200 bg-slate-50 text-slate-800"
-                              )}
+                                }`}
                             >
                               <p className="text-xs font-medium opacity-80">Jaula</p>
-                              <p className="text-base font-bold">{row}</p>
+                              <p className="text-base font-bold">
+                                {formatJaula(row)}
+                              </p>
                               <p className="mt-1 text-lg font-bold">{cageValue}</p>
                             </button>
                           );
@@ -3959,16 +3886,25 @@ export default function App() {
                       </div>
                     </div>
 
+                    {/* 🔹 CONTADOR */}
                     <div className="rounded-3xl border border-rose-200 bg-rose-50 p-4">
                       <div className="mb-3 flex items-center justify-between gap-3">
                         <div>
-                          <p className="text-sm font-medium text-rose-900">Carga directa</p>
+                          <p className="text-sm font-medium text-rose-900">
+                            Carga directa
+                          </p>
                           <p className="text-lg font-bold text-rose-950">
-                            {selectedSecondaryCause} en jaula {selectedJaula || "-"}
+                            {selectedSecondaryCause} en jaula{" "}
+                            {selectedJaula ? formatJaula(selectedJaula) : "-"}
                           </p>
                         </div>
+
                         <span className="rounded-full bg-white px-4 py-2 text-2xl font-black text-slate-900 shadow-sm">
-                          {selectedJaula ? secondaryClassificationMatrix[selectedSecondaryCause]?.[selectedJaula] ?? 0 : 0}
+                          {selectedJaula
+                            ? secondaryClassificationMatrix[selectedSecondaryCause]?.[
+                            selectedJaula
+                            ] ?? 0
+                            : 0}
                         </span>
                       </div>
 
@@ -3976,17 +3912,25 @@ export default function App() {
                         <>
                           <div className="grid grid-cols-3 gap-2">
                             {[0, 1, 2, 3, 4, 5].map((n) => {
-                              const value = secondaryClassificationMatrix[selectedSecondaryCause]?.[selectedJaula] ?? 0;
+                              const value =
+                                secondaryClassificationMatrix[selectedSecondaryCause]?.[
+                                selectedJaula
+                                ] ?? 0;
+
                               return (
                                 <button
                                   key={n}
-                                  onClick={() => updateSecondaryCageCount(selectedSecondaryCause, selectedJaula, n)}
-                                  className={cn(
-                                    "h-16 rounded-2xl border text-2xl font-black transition",
-                                    value === n
+                                  onClick={() =>
+                                    updateSecondaryCageCount(
+                                      selectedSecondaryCause,
+                                      selectedJaula,
+                                      n
+                                    )
+                                  }
+                                  className={`h-16 rounded-2xl border text-2xl font-black ${value === n
                                       ? "border-rose-600 bg-rose-600 text-white"
                                       : "border-slate-200 bg-white text-slate-800"
-                                  )}
+                                    }`}
                                 >
                                   {n}
                                 </button>
@@ -4000,19 +3944,27 @@ export default function App() {
                                 updateSecondaryCageCount(
                                   selectedSecondaryCause,
                                   selectedJaula,
-                                  Math.max(0, (secondaryClassificationMatrix[selectedSecondaryCause]?.[selectedJaula] ?? 0) - 1)
+                                  Math.max(
+                                    0,
+                                    (secondaryClassificationMatrix[
+                                      selectedSecondaryCause
+                                    ]?.[selectedJaula] ?? 0) - 1
+                                  )
                                 )
                               }
                               className="h-14 rounded-2xl border border-slate-200 bg-white text-xl font-bold text-slate-700"
                             >
                               -1
                             </button>
+
                             <button
                               onClick={() =>
                                 updateSecondaryCageCount(
                                   selectedSecondaryCause,
                                   selectedJaula,
-                                  (secondaryClassificationMatrix[selectedSecondaryCause]?.[selectedJaula] ?? 0) + 1
+                                  (secondaryClassificationMatrix[
+                                    selectedSecondaryCause
+                                  ]?.[selectedJaula] ?? 0) + 1
                                 )
                               }
                               className="h-14 rounded-2xl border border-slate-200 bg-white text-xl font-bold text-slate-700"
@@ -4040,17 +3992,31 @@ export default function App() {
               )}
             </section>
 
+            {/* ================= RESUMEN ================= */}
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
               <SectionHeader title="Resumen por jaula" subtitle="Salida ordenada y concisa" />
+
               <div className="space-y-3">
                 {orderedNecropsySummary.length > 0 ? (
                   orderedNecropsySummary.map(({ jaula, items }) => (
-                    <div key={jaula} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-base font-semibold text-slate-900">Jaula {jaula}</p>
+                    <div
+                      key={jaula}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    >
+                      <p className="text-base font-semibold text-slate-900">
+                        Jaula {formatJaula(jaula)}
+                      </p>
+
                       <div className="mt-2 space-y-1">
                         {items.map((item) => (
-                          <p key={`${jaula}-${item.causa}`} className="text-sm text-slate-700">
-                            <span className="font-semibold">{item.cantidad}</span> {item.causa.toLowerCase()}
+                          <p
+                            key={`${jaula}-${item.causa}`}
+                            className="text-sm text-slate-700"
+                          >
+                            <span className="font-semibold">
+                              {item.cantidad}
+                            </span>{" "}
+                            {item.causa.toLowerCase()}
                           </p>
                         ))}
                       </div>
@@ -4064,19 +4030,19 @@ export default function App() {
               </div>
             </section>
 
+            {/* ================= BOTONES ================= */}
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={saveNecropsyRecord}
                 className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-rose-600 text-sm font-semibold text-white"
               >
-                <CheckCircle2 className="h-4 w-4" />
                 Guardar
               </button>
+
               <button
                 onClick={exportNecropsySheet}
                 className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
               >
-                <Printer className="h-4 w-4" />
                 Exportar
               </button>
             </div>
