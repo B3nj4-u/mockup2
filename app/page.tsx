@@ -4727,6 +4727,19 @@ export default function App() {
 
         {tab === "resumen" && (
           <div className="space-y-4">
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  onClick={downloadFinalReport}
+                  className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#0F6CBD] text-sm font-semibold text-white"
+                >
+                  <Printer className="h-4 w-4" />
+                  Descargar informe final
+                </button>
+                      
+
+              </div>
+            </section>
             <section className="rounded-[28px] bg-gradient-to-br from-slate-900 to-slate-700 p-5 text-white shadow-xl">
               <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">Informe integrado</p>
               <h2 className="mt-2 text-xl font-semibold">{selectedVisit.id}</h2>
