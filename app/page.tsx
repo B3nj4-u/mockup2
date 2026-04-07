@@ -1312,6 +1312,89 @@ function summarizeSecondaryMatrix(matrix: SecondaryClassificationMatrix) {
     }))
     .sort((a, b) => a.jaula.localeCompare(b.jaula, undefined, { numeric: true }));
 }
+const NECROPSY_TABLE_FIXED_CAUSES: Array<
+  "PGD" | "SRS" | "Rezago" | "Deforme" | "Daño físico"
+> = ["PGD", "SRS", "Rezago", "Deforme", "Daño físico"];
+
+function buildNecropsyFullTable(matrix: SecondaryClassificationMatrix) {
+  const cageMap = new Map<
+    string,
+    Record<(typeof NECROPSY_TABLE_FIXED_CAUSES)[number], number>
+  >();
+
+  NECROPSY_TABLE_FIXED_CAUSES.forEach((cause) => {
+    Object.entries(matrix[cause] || {}).forEach(([jaula, cantidad]) => {
+      const jaulaFormateada = formatJaula(jaula);
+      const actual =
+        cageMap.get(jaulaFormateada) || {
+          PGD: 0,
+          SRS: 0,
+          Rezago: 0,
+          Deforme: 0,
+          "Daño físico": 0,
+        };
+
+      actual[cause] = Number(cantidad || 0);
+      cageMap.set(jaulaFormateada, actual);
+    });
+  });
+
+  const rows = Array.from(cageMap.entries())
+    .map(([jaula, values]) => {
+      const total =
+        values.PGD +
+        values.SRS +
+        values.Rezago +
+        values.Deforme +
+        values["Daño físico"];
+
+      return {
+        jaula,
+        ...values,
+        total,
+      };
+    })
+    .filter((row) => row.total > 0)
+    .sort((a, b) => a.jaula.localeCompare(b.jaula, undefined, { numeric: true }));
+
+  const totals = rows.reduce(
+    (acc, row) => {
+      acc.PGD += row.PGD;
+      acc.SRS += row.SRS;
+      acc.Rezago += row.Rezago;
+      acc.Deforme += row.Deforme;
+      acc["Daño físico"] += row["Daño físico"];
+      acc.total += row.total;
+      return acc;
+    },
+    {
+      PGD: 0,
+      SRS: 0,
+      Rezago: 0,
+      Deforme: 0,
+      "Daño físico": 0,
+      total: 0,
+    }
+  );
+
+  const percentages = {
+    PGD: totals.total ? (totals.PGD / totals.total) * 100 : 0,
+    SRS: totals.total ? (totals.SRS / totals.total) * 100 : 0,
+    Rezago: totals.total ? (totals.Rezago / totals.total) * 100 : 0,
+    Deforme: totals.total ? (totals.Deforme / totals.total) * 100 : 0,
+    "Daño físico": totals.total ? (totals["Daño físico"] / totals.total) * 100 : 0,
+  };
+
+  return {
+    rows,
+    totals,
+    percentages,
+  };
+}
+
+function formatNecropsyTablePercent(value: number) {
+  return `${value.toFixed(2).replace(".", ",")}%`;
+}
 
 const medicalHistorySeed: MedicalEvent[] = [
   {
@@ -1939,6 +2022,7 @@ function CorporateLogin({
   const [error, setError] = useState("");
   const [logoError, setLogoError] = useState(false);
 
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -2089,6 +2173,7 @@ export default function App() {
   const [filter, setFilter] = useState<FilterKey>("Todas");
   const [showNotifications, setShowNotifications] = useState(false);
   const [toast, setToast] = useState("");
+  const [showNecropsyFullTable, setShowNecropsyFullTable] = useState(false);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingVisitId, setEditingVisitId] = useState<string | null>(null);
@@ -2521,6 +2606,10 @@ export default function App() {
 
   const orderedNecropsySummary = useMemo(
     () => summarizeSecondaryMatrix(secondaryClassificationMatrix),
+    [secondaryClassificationMatrix]
+  );
+  const necropsyFullTable = useMemo(
+    () => buildNecropsyFullTable(secondaryClassificationMatrix),
     [secondaryClassificationMatrix]
   );
 
@@ -3871,8 +3960,8 @@ export default function App() {
                               key={`selector-${row}`}
                               onClick={() => setSelectedJaula(row)}
                               className={`rounded-2xl border px-3 py-3 text-left transition ${active
-                                  ? "border-rose-600 bg-rose-600 text-white"
-                                  : "border-slate-200 bg-slate-50 text-slate-800"
+                                ? "border-rose-600 bg-rose-600 text-white"
+                                : "border-slate-200 bg-slate-50 text-slate-800"
                                 }`}
                             >
                               <p className="text-xs font-medium opacity-80">Jaula</p>
@@ -3928,8 +4017,8 @@ export default function App() {
                                     )
                                   }
                                   className={`h-16 rounded-2xl border text-2xl font-black ${value === n
-                                      ? "border-rose-600 bg-rose-600 text-white"
-                                      : "border-slate-200 bg-white text-slate-800"
+                                    ? "border-rose-600 bg-rose-600 text-white"
+                                    : "border-slate-200 bg-white text-slate-800"
                                     }`}
                                 >
                                   {n}
@@ -3993,43 +4082,165 @@ export default function App() {
             </section>
 
             {/* ================= RESUMEN ================= */}
+
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <SectionHeader title="Resumen por jaula" subtitle="Salida ordenada y concisa" />
+              <SectionHeader
+                title="Resumen por jaula"
+                subtitle="Salida ordenada y concisa"
+              />
+
+              <div className="mb-4 flex justify-end">
+                <button
+                  onClick={() => setShowNecropsyFullTable(true)}
+                  disabled={necropsyFullTable.rows.length === 0}
+                  className={cn(
+                    "rounded-2xl border px-4 py-2 text-sm font-semibold transition",
+                    necropsyFullTable.rows.length > 0
+                      ? "border-slate-200 bg-slate-50 text-slate-800 hover:border-slate-300 hover:bg-slate-100"
+                      : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                  )}
+                >
+                  Ver tabla completa
+                </button>
+              </div>
 
               <div className="space-y-3">
                 {orderedNecropsySummary.length > 0 ? (
-                  orderedNecropsySummary.map(({ jaula, items }) => (
+                  orderedNecropsySummary.map((group) => (
                     <div
-                      key={jaula}
+                      key={group.jaula}
                       className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                     >
-                      <p className="text-base font-semibold text-slate-900">
-                        Jaula {formatJaula(jaula)}
-                      </p>
-
-                      <div className="mt-2 space-y-1">
-                        {items.map((item) => (
-                          <p
-                            key={`${jaula}-${item.causa}`}
-                            className="text-sm text-slate-700"
-                          >
-                            <span className="font-semibold">
-                              {item.cantidad}
-                            </span>{" "}
-                            {item.causa.toLowerCase()}
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">
+                            Jaula {formatJaula(group.jaula)}
                           </p>
-                        ))}
+                          <p className="text-xs text-slate-500">
+                            {group.items.map((item) => `${item.causa}: ${item.cantidad}`).join(" · ")}
+                          </p>
+                        </div>
+
+                        <span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-slate-900">
+                          {group.items.reduce((acc, item) => acc + item.cantidad, 0)}
+                        </span>
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-                    Aún no hay cantidades registradas.
+                    Aún no hay registros para mostrar en el resumen.
                   </div>
                 )}
               </div>
             </section>
+            <ModalShell
+              open={showNecropsyFullTable}
+              title="Tabla completa"
+              onClose={() => setShowNecropsyFullTable(false)}
+            >
+              {necropsyFullTable.rows.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-slate-700 text-white">
+                        <th className="border border-slate-300 px-3 py-2 text-left font-semibold">
+                          Jaula
+                        </th>
+                        <th className="border border-slate-300 px-3 py-2 text-center font-semibold">
+                          PGD
+                        </th>
+                        <th className="border border-slate-300 px-3 py-2 text-center font-semibold">
+                          SRS
+                        </th>
+                        <th className="border border-slate-300 px-3 py-2 text-center font-semibold">
+                          Rezago
+                        </th>
+                        <th className="border border-slate-300 px-3 py-2 text-center font-semibold">
+                          Deforme
+                        </th>
+                        <th className="border border-slate-300 px-3 py-2 text-center font-semibold">
+                          Daño físico
+                        </th>
+                        <th className="border border-slate-300 px-3 py-2 text-center font-semibold">
+                          Total
+                        </th>
+                      </tr>
+                    </thead>
 
+                    <tbody>
+                      {necropsyFullTable.rows.map((row) => (
+                        <tr key={row.jaula} className="bg-white">
+                          <td className="border border-slate-300 px-3 py-2 font-medium text-slate-900">
+                            {row.jaula}
+                          </td>
+                          <td className="border border-slate-300 px-3 py-2 text-center">{row.PGD}</td>
+                          <td className="border border-slate-300 px-3 py-2 text-center">{row.SRS}</td>
+                          <td className="border border-slate-300 px-3 py-2 text-center">{row.Rezago}</td>
+                          <td className="border border-slate-300 px-3 py-2 text-center">{row.Deforme}</td>
+                          <td className="border border-slate-300 px-3 py-2 text-center">{row["Daño físico"]}</td>
+                          <td className="border border-slate-300 px-3 py-2 text-center font-semibold">
+                            {row.total}
+                          </td>
+                        </tr>
+                      ))}
+
+                      <tr className="bg-slate-100">
+                        <td className="border border-slate-300 px-3 py-2 font-semibold text-slate-900">
+                          TOTAL
+                        </td>
+                        <td className="border border-slate-300 px-3 py-2 text-center font-semibold">
+                          {necropsyFullTable.totals.PGD}
+                        </td>
+                        <td className="border border-slate-300 px-3 py-2 text-center font-semibold">
+                          {necropsyFullTable.totals.SRS}
+                        </td>
+                        <td className="border border-slate-300 px-3 py-2 text-center font-semibold">
+                          {necropsyFullTable.totals.Rezago}
+                        </td>
+                        <td className="border border-slate-300 px-3 py-2 text-center font-semibold">
+                          {necropsyFullTable.totals.Deforme}
+                        </td>
+                        <td className="border border-slate-300 px-3 py-2 text-center font-semibold">
+                          {necropsyFullTable.totals["Daño físico"]}
+                        </td>
+                        <td className="border border-slate-300 px-3 py-2 text-center font-bold">
+                          {necropsyFullTable.totals.total}
+                        </td>
+                      </tr>
+
+                      <tr className="bg-slate-50">
+                        <td className="border border-slate-300 px-3 py-2 font-semibold text-slate-900">
+                          % TOTAL
+                        </td>
+                        <td className="border border-slate-300 px-3 py-2 text-center">
+                          {formatNecropsyTablePercent(necropsyFullTable.percentages.PGD)}
+                        </td>
+                        <td className="border border-slate-300 px-3 py-2 text-center">
+                          {formatNecropsyTablePercent(necropsyFullTable.percentages.SRS)}
+                        </td>
+                        <td className="border border-slate-300 px-3 py-2 text-center">
+                          {formatNecropsyTablePercent(necropsyFullTable.percentages.Rezago)}
+                        </td>
+                        <td className="border border-slate-300 px-3 py-2 text-center">
+                          {formatNecropsyTablePercent(necropsyFullTable.percentages.Deforme)}
+                        </td>
+                        <td className="border border-slate-300 px-3 py-2 text-center">
+                          {formatNecropsyTablePercent(necropsyFullTable.percentages["Daño físico"])}
+                        </td>
+                        <td className="border border-slate-300 px-3 py-2 text-center font-bold">
+                          100%
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                  No hay datos para mostrar en la tabla completa.
+                </div>
+              )}
+            </ModalShell>
             {/* ================= BOTONES ================= */}
             <div className="grid grid-cols-2 gap-2">
               <button
