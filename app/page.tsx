@@ -1391,6 +1391,474 @@ function buildNecropsyFullTable(matrix: SecondaryClassificationMatrix) {
 function formatNecropsyTablePercent(value: number) {
   return `${value.toFixed(2).replace(".", ",")}%`;
 }
+function escapeHtml(value: unknown) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function formatDateChile(dateString?: string) {
+  if (!dateString) return "-";
+  const [year, month, day] = dateString.split("-");
+  if (!year || !month || !day) return dateString;
+  return `${day}-${month}-${year}`;
+}
+
+function formatNumberCL(value?: number, digits = 0) {
+  const numeric = Number(value ?? 0);
+  return new Intl.NumberFormat("es-CL", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(numeric);
+}
+
+function formatPercentCL(value?: number, digits = 1) {
+  const numeric = Number(value ?? 0);
+  return `${formatNumberCL(numeric, digits)}%`;
+}
+
+function formatTextList(value?: string) {
+  if (!value) return "Sin registro";
+  return value.trim() || "Sin registro";
+}
+
+function buildCommentsBlock(report: any, selectedVisit: Visit, selectedNecropsy: NecropsyRecord) {
+  const comments = [
+    report?.resumenInspeccion,
+    report?.resumenMortalidad,
+    report?.resumenNecropsia,
+    report?.resumenTratamiento,
+    report?.resumenMuestreo,
+    selectedVisit?.hallazgo,
+    selectedNecropsy?.observaciones,
+  ]
+    .map((item) => String(item ?? "").trim())
+    .filter(Boolean);
+
+  if (comments.length === 0) {
+    return "<p>Sin comentarios registrados.</p>";
+  }
+
+  return comments.map((item) => `<p>${escapeHtml(item)}</p>`).join("");
+}
+
+function VisitFinalReportHtml({
+  selectedVisit,
+  selectedNecropsy,
+  generatedReport,
+  secondaryClassificationMatrix,
+}: {
+  selectedVisit: Visit;
+  selectedNecropsy: NecropsyRecord;
+  generatedReport: any;
+  secondaryClassificationMatrix: SecondaryClassificationMatrix;
+}) {
+  const fullTable = buildNecropsyFullTable(secondaryClassificationMatrix);
+
+  const reportDate = formatDateChile(selectedVisit?.fecha);
+  const empresa = selectedVisit?.empresa || "Sin empresa";
+  const centro = selectedVisit?.centro || "Sin centro";
+  const modulo = selectedVisit?.modulo || generatedReport?.modulo || "-";
+
+  const totalFish = Number(selectedVisit?.numeroPeces ?? 0);
+  const finalWeight = Number(selectedVisit?.pesoPromedio ?? 0);
+  const biomass = Number(selectedVisit?.biomasa ?? 0);
+
+  const dailyMortality = Number(selectedNecropsy?.mortalidadDia ?? 0);
+  const monthlyMortality = Number(selectedNecropsy?.mortalidadMesPct ?? 0);
+  const accumulatedMortality = Number(selectedNecropsy?.mortalidadAcumuladaPct ?? 0);
+
+  const treatments = Number(selectedNecropsy?.nroTratamientos ?? 0);
+  const baths = Number(selectedNecropsy?.nroBanos ?? 0);
+
+  const rowsHtml =
+    fullTable.rows.length > 0
+      ? fullTable.rows
+        .map((row) => {
+          return `
+              <tr>
+                <td>${escapeHtml(`${modulo}-${row.jaula}`)}</td>
+                <td>${escapeHtml("-")}</td>
+                <td class="num">${formatNumberCL(row.total)}</td>
+                ${fullTable.causes
+              .map(
+                (cause) =>
+                  `<td class="num">${Number(row.values[cause] || 0) > 0 ? formatNumberCL(row.values[cause]) : ""}</td>`
+              )
+              .join("")}
+              </tr>
+            `;
+        })
+        .join("")
+      : `
+        <tr>
+          <td>${escapeHtml(selectedVisit?.jaula || "-")}</td>
+          <td>${escapeHtml("-")}</td>
+          <td class="num">0</td>
+          ${NECROPSY_TABLE_ALL_CAUSES.map(() => `<td class="num"></td>`).join("")}
+        </tr>
+      `;
+
+  const totalsRow = `
+    <tr class="totals">
+      <td colspan="3">Total N°</td>
+      ${fullTable.causes.map((cause) => `<td class="num">${formatNumberCL(fullTable.totals[cause] || 0)}</td>`).join("")}
+    </tr>
+  `;
+
+  const percentagesRow = `
+    <tr class="totals">
+      <td colspan="3">Total %</td>
+      ${fullTable.causes
+      .map((cause) => `<td class="num">${formatNecropsyTablePercent(fullTable.percentages[cause] || 0)}</td>`)
+      .join("")}
+    </tr>
+  `;
+
+  const barItems = fullTable.causes
+    .map((cause) => ({
+      cause,
+      pct: Number(fullTable.percentages[cause] || 0),
+    }))
+    .filter((item) => item.pct > 0);
+
+  const maxPct = Math.max(...barItems.map((item) => item.pct), 1);
+
+  const barsHtml =
+    barItems.length > 0
+      ? barItems
+        .map(
+          (item) => `
+              <div class="bar-item">
+                <div class="bar-value">${formatNecropsyTablePercent(item.pct)}</div>
+                <div class="bar-track">
+                  <div class="bar-fill" style="height:${Math.max((item.pct / maxPct) * 180, 6)}px"></div>
+                </div>
+                <div class="bar-label">${escapeHtml(item.cause)}</div>
+              </div>
+            `
+        )
+        .join("")
+      : `<div class="empty-chart">Sin datos para gráfico</div>`;
+
+  const commentsHtml = buildCommentsBlock(generatedReport, selectedVisit, selectedNecropsy);
+
+  return `
+    <!doctype html>
+    <html lang="es">
+      <head>
+        <meta charset="utf-8" />
+        <title>Informe-${escapeHtml(selectedVisit.id)}</title>
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 12mm;
+          }
+
+          * {
+            box-sizing: border-box;
+          }
+
+          body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #111827;
+            background: #ffffff;
+          }
+
+          .page {
+            width: 100%;
+          }
+
+          .header {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1fr;
+            align-items: start;
+            gap: 12px;
+            font-size: 14px;
+            margin-bottom: 18px;
+          }
+
+          .header-left {
+            text-align: left;
+          }
+
+          .header-center {
+            text-align: center;
+            font-weight: 700;
+          }
+
+          .header-right {
+            text-align: right;
+            font-weight: 700;
+          }
+
+          .block-title {
+            font-size: 15px;
+            font-weight: 700;
+            border-bottom: 1px solid #111;
+            padding-bottom: 2px;
+            margin-bottom: 6px;
+          }
+
+          .top-grid {
+            display: grid;
+            grid-template-columns: 1.4fr 0.8fr;
+            gap: 24px;
+            margin-bottom: 18px;
+          }
+
+          .metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 18px;
+            font-size: 13px;
+          }
+
+          .metric-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+          }
+
+          .metric-label {
+            font-weight: 700;
+          }
+
+          .table-title {
+            text-align: center;
+            font-weight: 700;
+            margin: 4px 0 2px;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+          }
+
+          th, td {
+            border: 1px solid #444;
+            padding: 4px 6px;
+            vertical-align: middle;
+          }
+
+          th {
+            background: #f3f4f6;
+            font-weight: 700;
+          }
+
+          .num {
+            text-align: right;
+          }
+
+          .totals td {
+            font-weight: 700;
+            background: #fafafa;
+          }
+
+          .charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 14px;
+            margin-bottom: 14px;
+          }
+
+          .chart-box {
+            border: 1px solid #444;
+            min-height: 250px;
+            padding: 10px;
+          }
+
+          .chart-placeholder {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 12px;
+            text-align: center;
+          }
+
+          .bars {
+            height: 220px;
+            display: flex;
+            align-items: end;
+            justify-content: space-around;
+            gap: 10px;
+            padding: 8px 4px 0;
+          }
+
+          .bar-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: end;
+            width: 100%;
+            max-width: 58px;
+            height: 100%;
+          }
+
+          .bar-value {
+            font-size: 11px;
+            margin-bottom: 6px;
+            text-align: center;
+          }
+
+          .bar-track {
+            height: 180px;
+            width: 26px;
+            display: flex;
+            align-items: end;
+            justify-content: center;
+          }
+
+          .bar-fill {
+            width: 26px;
+            background: #4b5563;
+          }
+
+          .bar-label {
+            margin-top: 8px;
+            font-size: 11px;
+            text-align: center;
+            word-break: break-word;
+          }
+
+          .empty-chart {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #6b7280;
+            font-size: 12px;
+          }
+
+          .comments-box {
+            border: 1px solid #111;
+            margin-top: 8px;
+          }
+
+          .comments-title {
+            text-align: center;
+            font-weight: 700;
+            border-bottom: 1px solid #111;
+            padding: 4px 8px;
+            background: #f9fafb;
+          }
+
+          .comments-body {
+            min-height: 130px;
+            padding: 8px 10px;
+            font-size: 13px;
+            line-height: 1.45;
+          }
+
+          .comments-body p {
+            margin: 0 0 6px;
+          }
+
+          .signature {
+            margin-top: 48px;
+            text-align: center;
+            font-size: 14px;
+          }
+
+          .muted {
+            color: #6b7280;
+          }
+
+          @media print {
+            .page {
+              margin: 0;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="page">
+          <div class="header">
+            <div class="header-left"><strong>Fecha:</strong> ${escapeHtml(reportDate)}</div>
+            <div class="header-center">
+              <div>Reporte de Visita</div>
+              <div>Centro ${escapeHtml(centro)}</div>
+            </div>
+            <div class="header-right">${escapeHtml(empresa)}</div>
+          </div>
+
+          <div class="top-grid">
+            <div>
+              <div class="block-title">${escapeHtml(`${modulo}-${centro}`)}</div>
+              <div class="metrics">
+                <div class="metric-row"><span class="metric-label">N° Final:</span><span>${formatNumberCL(totalFish)}</span></div>
+                <div class="metric-row"><span class="metric-label">SFR:</span><span>${formatPercentCL(selectedVisit?.mortalidad ?? 0, 2)}</span></div>
+
+                <div class="metric-row"><span class="metric-label">Peso Final:</span><span>${formatNumberCL(finalWeight, 1)}</span></div>
+                <div class="metric-row"><span class="metric-label">N° Ttos:</span><span>${formatNumberCL(treatments)}</span></div>
+
+                <div class="metric-row"><span class="metric-label">Biomasa:</span><span>${formatNumberCL(biomass)}</span></div>
+                <div class="metric-row"><span class="metric-label">N° Baños:</span><span>${formatNumberCL(baths)}</span></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="block-title">Mortalidad</div>
+              <div class="metrics" style="grid-template-columns: 1fr;">
+                <div class="metric-row"><span class="metric-label">Día:</span><span>${formatNumberCL(dailyMortality)}</span></div>
+                <div class="metric-row"><span class="metric-label">Mes:</span><span>${formatPercentCL(monthlyMortality, 2)}</span></div>
+                <div class="metric-row"><span class="metric-label">Acc:</span><span>${formatPercentCL(accumulatedMortality, 1)}</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-title">Mortalidad por causa N°</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Jaulas</th>
+                <th>Grupo</th>
+                <th class="num">N</th>
+                ${fullTable.causes.map((cause) => `<th class="num">${escapeHtml(cause)}</th>`).join("")}
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+              ${totalsRow}
+              ${percentagesRow}
+            </tbody>
+          </table>
+
+          <div class="charts">
+            <div class="chart-box">
+              <div class="chart-placeholder">
+                Tendencia histórica por implementar.<br />
+              </div>
+            </div>
+
+            <div class="chart-box">
+              <div class="bars">${barsHtml}</div>
+            </div>
+          </div>
+
+          <div class="comments-box">
+            <div class="comments-title">Comentarios y Recomendaciones</div>
+            <div class="comments-body">
+              ${commentsHtml}
+            </div>
+          </div>
+
+          <div class="signature">
+            ${escapeHtml(selectedVisit?.veterinario || "Médico Veterinario")}
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
 
 const medicalHistorySeed: MedicalEvent[] = [
   {
@@ -3085,25 +3553,7 @@ export default function App() {
   };
 
   const exportSummary = () => {
-    const payload = {
-      visita: selectedVisit,
-      historial: filteredMedicalHistory,
-      mortalidad: mortalityForContext,
-      necropsias: necropsyRecords,
-      reporte: generatedReport,
-      exportedAt: new Date().toISOString(),
-    };
-
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${selectedVisit.id}-resumen-visita.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setToast("Resumen exportado en JSON local");
+    downloadFinalReport();
   };
 
   const exportNecropsySheet = () => {
@@ -3139,6 +3589,35 @@ export default function App() {
   };
 
   const act = (message: string) => setToast(message);
+  const downloadFinalReport = () => {
+    if (!selectedVisit || !selectedNecropsy) {
+      setToast("No hay información suficiente para generar el informe");
+      return;
+    }
+
+    const html = VisitFinalReportHtml({
+      selectedVisit,
+      selectedNecropsy,
+      generatedReport,
+      secondaryClassificationMatrix,
+    });
+
+    const reportWindow = window.open("", "_blank", "width=1200,height=900");
+
+    if (!reportWindow) {
+      setToast("No se pudo abrir la ventana de impresión");
+      return;
+    }
+
+    reportWindow.document.open();
+    reportWindow.document.write(html);
+    reportWindow.document.close();
+    reportWindow.focus();
+
+    setTimeout(() => {
+      reportWindow.print();
+    }, 400);
+  };
 
   if (!ready) {
     return <div className="min-h-screen bg-[#F5F7FA]" />;
@@ -4256,7 +4735,7 @@ export default function App() {
               </p>
             </section>
 
-            <ContextSelectorsCard
+            {/* <ContextSelectorsCard
               title="Contexto del informe"
               subtitle="El informe se arma con el centro, módulo y jaula actualmente seleccionados"
               selectedCentro={selectedCentro}
@@ -4268,7 +4747,7 @@ export default function App() {
               onCentroChange={handleCentroChange}
               onModuloChange={handleModuloChange}
               onJaulaChange={setSelectedJaula}
-            />
+            /> */}
 
             <AccordionSection title="Visita" subtitle="Datos generales" defaultOpen>
               <div className="grid grid-cols-2 gap-3 text-sm text-slate-700">
@@ -4448,11 +4927,11 @@ export default function App() {
 
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <button
-                    onClick={exportSummary}
+                    onClick={downloadFinalReport}
                     className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
                   >
-                    <Download className="h-4 w-4" />
-                    Exportar
+                    <Printer className="h-4 w-4" />
+                    Descargar informe
                   </button>
                   <button
                     onClick={sendToTeams}
