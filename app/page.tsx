@@ -1312,83 +1312,79 @@ function summarizeSecondaryMatrix(matrix: SecondaryClassificationMatrix) {
     }))
     .sort((a, b) => a.jaula.localeCompare(b.jaula, undefined, { numeric: true }));
 }
-const NECROPSY_TABLE_FIXED_CAUSES: Array<
-  "PGD" | "SRS" | "Rezago" | "Deforme" | "Daño físico"
-> = ["PGD", "SRS", "Rezago", "Deforme", "Daño físico"];
+const NECROPSY_TABLE_ALL_CAUSES: MortalityCause[] = [
+  "PGD",
+  "HSMI",
+  "SRS",
+  "TENA",
+  "Rezago",
+  "ONI",
+  "Deforme",
+  "Daño físico",
+  "BKD",
+  "Otras",
+];
 
 function buildNecropsyFullTable(matrix: SecondaryClassificationMatrix) {
-  const cageMap = new Map<
-    string,
-    Record<(typeof NECROPSY_TABLE_FIXED_CAUSES)[number], number>
-  >();
+  const cageSet = new Set<string>();
 
-  NECROPSY_TABLE_FIXED_CAUSES.forEach((cause) => {
+  NECROPSY_TABLE_ALL_CAUSES.forEach((cause) => {
     Object.entries(matrix[cause] || {}).forEach(([jaula, cantidad]) => {
-      const jaulaFormateada = formatJaula(jaula);
-      const actual =
-        cageMap.get(jaulaFormateada) || {
-          PGD: 0,
-          SRS: 0,
-          Rezago: 0,
-          Deforme: 0,
-          "Daño físico": 0,
-        };
-
-      actual[cause] = Number(cantidad || 0);
-      cageMap.set(jaulaFormateada, actual);
+      if (Number(cantidad || 0) > 0) {
+        cageSet.add(formatJaula(jaula));
+      }
     });
   });
 
-  const rows = Array.from(cageMap.entries())
-    .map(([jaula, values]) => {
-      const total =
-        values.PGD +
-        values.SRS +
-        values.Rezago +
-        values.Deforme +
-        values["Daño físico"];
+  const rows = Array.from(cageSet)
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+    .map((jaula) => {
+      const values = Object.fromEntries(
+        NECROPSY_TABLE_ALL_CAUSES.map((cause) => {
+          const amount =
+            Object.entries(matrix[cause] || {}).find(
+              ([cageKey]) => formatJaula(cageKey) === jaula
+            )?.[1] ?? 0;
+
+          return [cause, Number(amount)];
+        })
+      ) as Record<MortalityCause, number>;
+
+      const total = NECROPSY_TABLE_ALL_CAUSES.reduce(
+        (sum, cause) => sum + Number(values[cause] || 0),
+        0
+      );
 
       return {
         jaula,
-        ...values,
+        values,
         total,
       };
     })
-    .filter((row) => row.total > 0)
-    .sort((a, b) => a.jaula.localeCompare(b.jaula, undefined, { numeric: true }));
+    .filter((row) => row.total > 0);
 
-  const totals = rows.reduce(
-    (acc, row) => {
-      acc.PGD += row.PGD;
-      acc.SRS += row.SRS;
-      acc.Rezago += row.Rezago;
-      acc.Deforme += row.Deforme;
-      acc["Daño físico"] += row["Daño físico"];
-      acc.total += row.total;
-      return acc;
-    },
-    {
-      PGD: 0,
-      SRS: 0,
-      Rezago: 0,
-      Deforme: 0,
-      "Daño físico": 0,
-      total: 0,
-    }
-  );
+  const totals = Object.fromEntries(
+    NECROPSY_TABLE_ALL_CAUSES.map((cause) => [
+      cause,
+      rows.reduce((sum, row) => sum + Number(row.values[cause] || 0), 0),
+    ])
+  ) as Record<MortalityCause, number>;
 
-  const percentages = {
-    PGD: totals.total ? (totals.PGD / totals.total) * 100 : 0,
-    SRS: totals.total ? (totals.SRS / totals.total) * 100 : 0,
-    Rezago: totals.total ? (totals.Rezago / totals.total) * 100 : 0,
-    Deforme: totals.total ? (totals.Deforme / totals.total) * 100 : 0,
-    "Daño físico": totals.total ? (totals["Daño físico"] / totals.total) * 100 : 0,
-  };
+  const grandTotal = rows.reduce((sum, row) => sum + row.total, 0);
+
+  const percentages = Object.fromEntries(
+    NECROPSY_TABLE_ALL_CAUSES.map((cause) => [
+      cause,
+      grandTotal > 0 ? (Number(totals[cause] || 0) / grandTotal) * 100 : 0,
+    ])
+  ) as Record<MortalityCause, number>;
 
   return {
+    causes: NECROPSY_TABLE_ALL_CAUSES,
     rows,
     totals,
     percentages,
+    grandTotal,
   };
 }
 
@@ -4147,21 +4143,16 @@ export default function App() {
                         <th className="border border-slate-300 px-3 py-2 text-left font-semibold">
                           Jaula
                         </th>
-                        <th className="border border-slate-300 px-3 py-2 text-center font-semibold">
-                          PGD
-                        </th>
-                        <th className="border border-slate-300 px-3 py-2 text-center font-semibold">
-                          SRS
-                        </th>
-                        <th className="border border-slate-300 px-3 py-2 text-center font-semibold">
-                          Rezago
-                        </th>
-                        <th className="border border-slate-300 px-3 py-2 text-center font-semibold">
-                          Deforme
-                        </th>
-                        <th className="border border-slate-300 px-3 py-2 text-center font-semibold">
-                          Daño físico
-                        </th>
+
+                        {necropsyFullTable.causes.map((cause) => (
+                          <th
+                            key={cause}
+                            className="border border-slate-300 px-3 py-2 text-center font-semibold whitespace-nowrap"
+                          >
+                            {cause}
+                          </th>
+                        ))}
+
                         <th className="border border-slate-300 px-3 py-2 text-center font-semibold">
                           Total
                         </th>
@@ -4174,11 +4165,16 @@ export default function App() {
                           <td className="border border-slate-300 px-3 py-2 font-medium text-slate-900">
                             {row.jaula}
                           </td>
-                          <td className="border border-slate-300 px-3 py-2 text-center">{row.PGD}</td>
-                          <td className="border border-slate-300 px-3 py-2 text-center">{row.SRS}</td>
-                          <td className="border border-slate-300 px-3 py-2 text-center">{row.Rezago}</td>
-                          <td className="border border-slate-300 px-3 py-2 text-center">{row.Deforme}</td>
-                          <td className="border border-slate-300 px-3 py-2 text-center">{row["Daño físico"]}</td>
+
+                          {necropsyFullTable.causes.map((cause) => (
+                            <td
+                              key={`${row.jaula}-${cause}`}
+                              className="border border-slate-300 px-3 py-2 text-center"
+                            >
+                              {row.values[cause] || 0}
+                            </td>
+                          ))}
+
                           <td className="border border-slate-300 px-3 py-2 text-center font-semibold">
                             {row.total}
                           </td>
@@ -4189,23 +4185,18 @@ export default function App() {
                         <td className="border border-slate-300 px-3 py-2 font-semibold text-slate-900">
                           TOTAL
                         </td>
-                        <td className="border border-slate-300 px-3 py-2 text-center font-semibold">
-                          {necropsyFullTable.totals.PGD}
-                        </td>
-                        <td className="border border-slate-300 px-3 py-2 text-center font-semibold">
-                          {necropsyFullTable.totals.SRS}
-                        </td>
-                        <td className="border border-slate-300 px-3 py-2 text-center font-semibold">
-                          {necropsyFullTable.totals.Rezago}
-                        </td>
-                        <td className="border border-slate-300 px-3 py-2 text-center font-semibold">
-                          {necropsyFullTable.totals.Deforme}
-                        </td>
-                        <td className="border border-slate-300 px-3 py-2 text-center font-semibold">
-                          {necropsyFullTable.totals["Daño físico"]}
-                        </td>
+
+                        {necropsyFullTable.causes.map((cause) => (
+                          <td
+                            key={`total-${cause}`}
+                            className="border border-slate-300 px-3 py-2 text-center font-semibold"
+                          >
+                            {necropsyFullTable.totals[cause]}
+                          </td>
+                        ))}
+
                         <td className="border border-slate-300 px-3 py-2 text-center font-bold">
-                          {necropsyFullTable.totals.total}
+                          {necropsyFullTable.grandTotal}
                         </td>
                       </tr>
 
@@ -4213,21 +4204,16 @@ export default function App() {
                         <td className="border border-slate-300 px-3 py-2 font-semibold text-slate-900">
                           % TOTAL
                         </td>
-                        <td className="border border-slate-300 px-3 py-2 text-center">
-                          {formatNecropsyTablePercent(necropsyFullTable.percentages.PGD)}
-                        </td>
-                        <td className="border border-slate-300 px-3 py-2 text-center">
-                          {formatNecropsyTablePercent(necropsyFullTable.percentages.SRS)}
-                        </td>
-                        <td className="border border-slate-300 px-3 py-2 text-center">
-                          {formatNecropsyTablePercent(necropsyFullTable.percentages.Rezago)}
-                        </td>
-                        <td className="border border-slate-300 px-3 py-2 text-center">
-                          {formatNecropsyTablePercent(necropsyFullTable.percentages.Deforme)}
-                        </td>
-                        <td className="border border-slate-300 px-3 py-2 text-center">
-                          {formatNecropsyTablePercent(necropsyFullTable.percentages["Daño físico"])}
-                        </td>
+
+                        {necropsyFullTable.causes.map((cause) => (
+                          <td
+                            key={`pct-${cause}`}
+                            className="border border-slate-300 px-3 py-2 text-center"
+                          >
+                            {formatNecropsyTablePercent(necropsyFullTable.percentages[cause])}
+                          </td>
+                        ))}
+
                         <td className="border border-slate-300 px-3 py-2 text-center font-bold">
                           100%
                         </td>
